@@ -18,19 +18,36 @@ enum TaskStatus {
   const TaskStatus(this.label, this.dotColor, this.bgColor, this.textColor);
 }
 
-class StudioTask {
+class TaskAttachment {
   final String id;
-  final String date;
-  final String designerName;
-  final String designerRole;
-  final String avatarUrl;
-  final String workName;
-  final String clientName;
-  final String typeTag;
-  final String workBrief;
-  final TaskStatus status;
-  final String timeWindow;
-  final String timeLogged;
+  final String name;
+  final String imageUrl;
+  final String fileSize;
+  final String uploadedAt;
+
+  TaskAttachment({
+    required this.id,
+    required this.name,
+    required this.imageUrl,
+    required this.fileSize,
+    required this.uploadedAt,
+  });
+}
+
+class StudioTask {
+  String id;
+  String date;
+  String designerName;
+  String designerRole;
+  String avatarUrl;
+  String workName;
+  String clientName;
+  String typeTag;
+  String workBrief;
+  TaskStatus status;
+  String timeWindow;
+  String timeLogged;
+  List<TaskAttachment> attachments;
 
   StudioTask({
     required this.id,
@@ -45,7 +62,8 @@ class StudioTask {
     required this.status,
     required this.timeWindow,
     required this.timeLogged,
-  });
+    List<TaskAttachment>? attachments,
+  }) : attachments = attachments ?? [];
 }
 
 class DesignerCapacity {
@@ -166,6 +184,22 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
         status: TaskStatus.inProgress,
         timeWindow: '09:30 AM - 01:30 PM',
         timeLogged: '4h 00m logged',
+        attachments: [
+          TaskAttachment(
+            id: 'att-1',
+            name: 'Veloce_Logomark_v2.png',
+            imageUrl: 'https://images.unsplash.com/photo-1600132806370-bf17e65e942f?w=600&auto=format&fit=crop&q=80',
+            fileSize: '420 KB',
+            uploadedAt: '10:45 AM',
+          ),
+          TaskAttachment(
+            id: 'att-2',
+            name: 'Typography_Scale_Spec.png',
+            imageUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&auto=format&fit=crop&q=80',
+            fileSize: '890 KB',
+            uploadedAt: '12:15 PM',
+          ),
+        ],
       ),
       StudioTask(
         id: '2',
@@ -180,6 +214,15 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
         status: TaskStatus.completed,
         timeWindow: '08:00 AM - 11:30 AM',
         timeLogged: '3h 30m logged',
+        attachments: [
+          TaskAttachment(
+            id: 'att-3',
+            name: 'Kyoto_Poster_Final_Print.jpg',
+            imageUrl: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=600&auto=format&fit=crop&q=80',
+            fileSize: '1.2 MB',
+            uploadedAt: '11:28 AM',
+          ),
+        ],
       ),
       StudioTask(
         id: '3',
@@ -194,6 +237,15 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
         status: TaskStatus.inReview,
         timeWindow: '10:00 AM - 03:00 PM',
         timeLogged: '5h 00m logged',
+        attachments: [
+          TaskAttachment(
+            id: 'att-4',
+            name: 'Sona_Reel_Render_Keyframe.png',
+            imageUrl: 'https://images.unsplash.com/photo-1634017839464-5c339ebe3cb4?w=600&auto=format&fit=crop&q=80',
+            fileSize: '750 KB',
+            uploadedAt: '02:50 PM',
+          ),
+        ],
       ),
       StudioTask(
         id: '4',
@@ -295,6 +347,710 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
       }
       return true;
     }).toList();
+  }
+
+  // --- ACTIONS: UPDATE STATUS, EDIT, ATTACH, DELETE ---
+
+  void _openUpdateStatusDialog(StudioTask task) {
+    TaskStatus currentStatus = task.status;
+
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return Dialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              backgroundColor: Colors.white,
+              child: Container(
+                width: 440,
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFEEF2FF),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Icon(Icons.published_with_changes_rounded, size: 20, color: Color(0xFF25206A)),
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              'Update Task Status',
+                              style: GoogleFonts.inter(fontSize: 17, fontWeight: FontWeight.w700, color: const Color(0xFF0F172A)),
+                            ),
+                          ],
+                        ),
+                        IconButton(
+                          onPressed: () => Navigator.pop(ctx),
+                          icon: const Icon(Icons.close, size: 20, color: Color(0xFF64748B)),
+                          splashRadius: 18,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Task: ${task.workName}',
+                      style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: const Color(0xFF334155)),
+                    ),
+                    Text(
+                      'Assigned to ${task.designerName} • ${task.clientName}',
+                      style: GoogleFonts.jetBrainsMono(fontSize: 11, color: const Color(0xFF64748B)),
+                    ),
+                    const SizedBox(height: 20),
+
+                    ...TaskStatus.values.map((s) {
+                      final isSelected = currentStatus == s;
+                      return InkWell(
+                        borderRadius: BorderRadius.circular(10),
+                        onTap: () {
+                          setDialogState(() => currentStatus = s);
+                        },
+                        child: Container(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                          decoration: BoxDecoration(
+                            color: isSelected ? s.bgColor : const Color(0xFFF8FAFC),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: isSelected ? s.dotColor : const Color(0xFFE2E8F0),
+                              width: isSelected ? 1.5 : 1,
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 10,
+                                height: 10,
+                                decoration: BoxDecoration(color: s.dotColor, shape: BoxShape.circle),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  s.label,
+                                  style: GoogleFonts.jetBrainsMono(
+                                    fontSize: 13,
+                                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                                    color: isSelected ? s.textColor : const Color(0xFF1E293B),
+                                  ),
+                                ),
+                              ),
+                              if (isSelected)
+                                Icon(Icons.check_circle_rounded, size: 18, color: s.dotColor),
+                            ],
+                          ),
+                        ),
+                      );
+                    }),
+
+                    const SizedBox(height: 20),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(ctx),
+                          child: Text('Cancel', style: GoogleFonts.inter(color: const Color(0xFF64748B), fontWeight: FontWeight.w600)),
+                        ),
+                        const SizedBox(width: 10),
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF25206A),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            elevation: 0,
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              task.status = currentStatus;
+                            });
+                            Navigator.pop(ctx);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Status updated to "${currentStatus.label}" for "${task.workName}"'),
+                                duration: const Duration(seconds: 2),
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
+                          },
+                          child: Text('Save Status', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _openEditTaskDialog(StudioTask task) {
+    final workNameCtrl = TextEditingController(text: task.workName);
+    final clientCtrl = TextEditingController(text: task.clientName);
+    final typeCtrl = TextEditingController(text: task.typeTag);
+    final briefCtrl = TextEditingController(text: task.workBrief);
+    final timeWindowCtrl = TextEditingController(text: task.timeWindow);
+    final timeLoggedCtrl = TextEditingController(text: task.timeLogged);
+    String selectedDesignerName = task.designerName;
+
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return Dialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              backgroundColor: Colors.white,
+              child: Container(
+                width: 520,
+                padding: const EdgeInsets.all(28),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFEEF2FF),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Icon(Icons.edit_note_rounded, size: 20, color: Color(0xFF25206A)),
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              'Edit Studio Task',
+                              style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w700, color: const Color(0xFF0F172A)),
+                            ),
+                          ],
+                        ),
+                        IconButton(
+                          onPressed: () => Navigator.pop(ctx),
+                          icon: const Icon(Icons.close, size: 20, color: Color(0xFF64748B)),
+                          splashRadius: 18,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: workNameCtrl,
+                      decoration: InputDecoration(
+                        labelText: 'Work / Project Title',
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: clientCtrl,
+                      decoration: InputDecoration(
+                        labelText: 'Client Name',
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: DropdownButtonFormField<String>(
+                            initialValue: selectedDesignerName,
+                            decoration: InputDecoration(
+                              labelText: 'Assigned Designer',
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                            ),
+                            items: const [
+                              DropdownMenuItem(value: 'Elena Rostova', child: Text('Elena Rostova (Lead)')),
+                              DropdownMenuItem(value: 'Marcus Chen', child: Text('Marcus Chen (Graphic)')),
+                              DropdownMenuItem(value: 'Maya Patel', child: Text('Maya Patel (3D)')),
+                              DropdownMenuItem(value: 'Liam Vance', child: Text('Liam Vance (Retouch)')),
+                            ],
+                            onChanged: (val) {
+                              if (val != null) setDialogState(() => selectedDesignerName = val);
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: TextField(
+                            controller: typeCtrl,
+                            decoration: InputDecoration(
+                              labelText: 'Type Tag',
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: timeWindowCtrl,
+                            decoration: InputDecoration(
+                              labelText: 'Time Window',
+                              hintText: '09:30 AM - 01:30 PM',
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: TextField(
+                            controller: timeLoggedCtrl,
+                            decoration: InputDecoration(
+                              labelText: 'Time Logged',
+                              hintText: '4h 00m logged',
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: briefCtrl,
+                      maxLines: 2,
+                      decoration: InputDecoration(
+                        labelText: 'Work Brief & Objectives',
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(ctx),
+                          child: Text('Cancel', style: GoogleFonts.inter(color: const Color(0xFF64748B), fontWeight: FontWeight.w600)),
+                        ),
+                        const SizedBox(width: 12),
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF25206A),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            elevation: 0,
+                          ),
+                          onPressed: () {
+                            if (workNameCtrl.text.trim().isEmpty) return;
+                            setState(() {
+                              task.workName = workNameCtrl.text.trim();
+                              task.clientName = clientCtrl.text.trim();
+                              task.typeTag = typeCtrl.text.trim();
+                              task.workBrief = briefCtrl.text.trim();
+                              task.timeWindow = timeWindowCtrl.text.trim();
+                              task.timeLogged = timeLoggedCtrl.text.trim();
+                              task.designerName = selectedDesignerName;
+                            });
+                            Navigator.pop(ctx);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Updated "${task.workName}"'),
+                                duration: const Duration(seconds: 2),
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
+                          },
+                          child: Text('Save Changes', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _openAttachDialog(StudioTask task) {
+    final fileNameCtrl = TextEditingController(text: 'Deliverable_Screenshot_${task.attachments.length + 1}.png');
+    final urlCtrl = TextEditingController(text: 'https://images.unsplash.com/photo-1542744094-3a31f272c490?w=600&auto=format&fit=crop&q=80');
+
+    final samplePresets = [
+      {
+        'name': 'UI_Flow_Screenshot.png',
+        'url': 'https://images.unsplash.com/photo-1581291518857-4e27b48ff24e?w=600&auto=format&fit=crop&q=80',
+        'size': '520 KB',
+      },
+      {
+        'name': 'Brand_Mockup_Export.jpg',
+        'url': 'https://images.unsplash.com/photo-1600132806370-bf17e65e942f?w=600&auto=format&fit=crop&q=80',
+        'size': '840 KB',
+      },
+      {
+        'name': '3D_Render_Preview.png',
+        'url': 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&auto=format&fit=crop&q=80',
+        'size': '1.1 MB',
+      },
+    ];
+
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return Dialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              backgroundColor: Colors.white,
+              child: Container(
+                width: 600,
+                padding: const EdgeInsets.all(26),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFEEF2FF),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: const Icon(Icons.attach_file_rounded, size: 20, color: Color(0xFF25206A)),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Task Attachments & Deliverables',
+                                      style: GoogleFonts.inter(fontSize: 17, fontWeight: FontWeight.w700, color: const Color(0xFF0F172A)),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    Text(
+                                      'Task: ${task.workName}',
+                                      style: GoogleFonts.jetBrainsMono(fontSize: 11, color: const Color(0xFF64748B)),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: () => Navigator.pop(ctx),
+                          icon: const Icon(Icons.close, size: 20, color: Color(0xFF64748B)),
+                          splashRadius: 18,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 18),
+
+                    if (task.attachments.isEmpty)
+                      Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF8FAFC),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: const Color(0xFFE2E8F0)),
+                        ),
+                        child: Center(
+                          child: Column(
+                            children: [
+                              const Icon(Icons.image_outlined, size: 36, color: Color(0xFF94A3B8)),
+                              const SizedBox(height: 8),
+                              Text(
+                                'No screenshots or images attached yet.',
+                                style: GoogleFonts.inter(fontSize: 12.5, color: const Color(0xFF64748B)),
+                              ),
+                              Text(
+                                'Upload completed task previews or select a studio preset below.',
+                                style: GoogleFonts.jetBrainsMono(fontSize: 10.5, color: const Color(0xFF94A3B8)),
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
+                    else
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Attached Screenshots (${task.attachments.length})',
+                            style: GoogleFonts.jetBrainsMono(fontSize: 11, fontWeight: FontWeight.w600, color: const Color(0xFF475569)),
+                          ),
+                          const SizedBox(height: 10),
+                          SizedBox(
+                            height: 120,
+                            child: ListView.separated(
+                              scrollDirection: Axis.horizontal,
+                              itemCount: task.attachments.length,
+                              separatorBuilder: (context, index) => const SizedBox(width: 12),
+                              itemBuilder: (context, index) {
+                                final att = task.attachments[index];
+                                return Stack(
+                                  children: [
+                                    Container(
+                                      width: 160,
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                                      ),
+                                      clipBehavior: Clip.antiAlias,
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Expanded(
+                                            child: Image.network(
+                                              att.imageUrl,
+                                              width: double.infinity,
+                                              fit: BoxFit.cover,
+                                              errorBuilder: (context, error, stackTrace) => Container(
+                                                color: const Color(0xFFE2E8F0),
+                                                child: const Center(child: Icon(Icons.broken_image, color: Colors.grey)),
+                                              ),
+                                            ),
+                                          ),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                                            color: Colors.white,
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  att.name,
+                                                  style: GoogleFonts.inter(fontSize: 10.5, fontWeight: FontWeight.w600, color: const Color(0xFF0F172A)),
+                                                  overflow: TextOverflow.ellipsis,
+                                                ),
+                                                Text(
+                                                  '${att.fileSize} • ${att.uploadedAt}',
+                                                  style: GoogleFonts.jetBrainsMono(fontSize: 9, color: const Color(0xFF94A3B8)),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    Positioned(
+                                      top: 4,
+                                      right: 4,
+                                      child: InkWell(
+                                        onTap: () {
+                                          setDialogState(() {
+                                            task.attachments.removeAt(index);
+                                          });
+                                          setState(() {});
+                                        },
+                                        child: Container(
+                                          padding: const EdgeInsets.all(3),
+                                          decoration: BoxDecoration(
+                                            color: Colors.black.withValues(alpha: 0.6),
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: const Icon(Icons.close, size: 12, color: Colors.white),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                );
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+
+                    const SizedBox(height: 18),
+                    const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                    const SizedBox(height: 14),
+
+                    Text(
+                      'Quick Attach Studio Presets:',
+                      style: GoogleFonts.jetBrainsMono(fontSize: 10.5, fontWeight: FontWeight.w600, color: const Color(0xFF64748B)),
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 6,
+                      children: samplePresets.map((preset) {
+                        return ActionChip(
+                          avatar: const Icon(Icons.add_photo_alternate_outlined, size: 14, color: Color(0xFF25206A)),
+                          label: Text(
+                            '+ ${preset['name']}',
+                            style: GoogleFonts.jetBrainsMono(fontSize: 10.5, color: const Color(0xFF1E293B)),
+                          ),
+                          backgroundColor: const Color(0xFFF1F5F9),
+                          onPressed: () {
+                            setDialogState(() {
+                              task.attachments.add(
+                                TaskAttachment(
+                                  id: DateTime.now().millisecondsSinceEpoch.toString(),
+                                  name: preset['name']!,
+                                  imageUrl: preset['url']!,
+                                  fileSize: preset['size']!,
+                                  uploadedAt: 'Just now',
+                                ),
+                              );
+                            });
+                            setState(() {});
+                          },
+                        );
+                      }).toList(),
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    Row(
+                      children: [
+                        Expanded(
+                          flex: 2,
+                          child: TextField(
+                            controller: fileNameCtrl,
+                            decoration: InputDecoration(
+                              labelText: 'Attachment Name',
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          flex: 3,
+                          child: TextField(
+                            controller: urlCtrl,
+                            decoration: InputDecoration(
+                              labelText: 'Image / Screenshot URL',
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF25206A),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            elevation: 0,
+                          ),
+                          onPressed: () {
+                            if (fileNameCtrl.text.trim().isEmpty || urlCtrl.text.trim().isEmpty) return;
+                            setDialogState(() {
+                              task.attachments.add(
+                                TaskAttachment(
+                                  id: DateTime.now().millisecondsSinceEpoch.toString(),
+                                  name: fileNameCtrl.text.trim(),
+                                  imageUrl: urlCtrl.text.trim(),
+                                  fileSize: '450 KB',
+                                  uploadedAt: 'Just now',
+                                ),
+                              );
+                            });
+                            setState(() {});
+                            fileNameCtrl.text = 'Deliverable_Screenshot_${task.attachments.length + 1}.png';
+                          },
+                          icon: const Icon(Icons.upload_file_rounded, size: 15),
+                          label: Text('Attach', style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 12)),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 20),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF25206A),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            elevation: 0,
+                          ),
+                          onPressed: () => Navigator.pop(ctx),
+                          child: Text('Done', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _openDeleteConfirmDialog(StudioTask task) {
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          title: Text(
+            'Delete Assignment?',
+            style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 17, color: const Color(0xFF0F172A)),
+          ),
+          content: Text(
+            'Are you sure you want to delete "${task.workName}"? This action cannot be undone.',
+            style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF64748B)),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text('Cancel', style: GoogleFonts.inter(color: const Color(0xFF64748B), fontWeight: FontWeight.w600)),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFDC2626),
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+              onPressed: () {
+                setState(() {
+                  _tasks.removeWhere((t) => t.id == task.id);
+                });
+                Navigator.pop(ctx);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Deleted "${task.workName}"'),
+                    duration: const Duration(seconds: 2),
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              },
+              child: Text('Delete', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   void _openAddNewWorkDialog() {
@@ -490,7 +1246,7 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
               builder: (context, constraints) {
                 final isNarrow = constraints.maxWidth < 1120;
                 final horizontalPadding = constraints.maxWidth < 700 ? 16.0 : 40.0;
-                final contentWidth = constraints.maxWidth < 1120 ? 1120.0 : (constraints.maxWidth - horizontalPadding * 2);
+                final contentWidth = constraints.maxWidth < 1180 ? 1180.0 : (constraints.maxWidth - horizontalPadding * 2);
 
                 return Padding(
                   padding: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: 28),
@@ -1133,11 +1889,12 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
                 _buildTableHeaderCell('DATE', width: 95),
                 _buildTableHeaderCell('ASSIGNED TO', width: 165),
                 _buildTableHeaderCell('WORK NAME', width: 180),
-                _buildTableHeaderCell('TYPE', width: 130),
+                _buildTableHeaderCell('TYPE', width: 120),
                 _buildTableHeaderCell('WORK BRIEF & CONTENT', flex: 3),
+                _buildTableHeaderCell('ATTACHMENTS', width: 120),
                 _buildTableHeaderCell('STATUS', width: 130),
-                _buildTableHeaderCell('TIME WINDOW / TOTAL', width: 165),
-                const SizedBox(width: 32),
+                _buildTableHeaderCell('TIME WINDOW / TOTAL', width: 155),
+                const SizedBox(width: 36),
               ],
             ),
           ),
@@ -1341,7 +2098,7 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
 
           // TYPE (Pill)
           SizedBox(
-            width: 130,
+            width: 120,
             child: Align(
               alignment: Alignment.centerLeft,
               child: Container(
@@ -1376,41 +2133,86 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
             ),
           ),
 
-          // STATUS
+          // ATTACHMENTS BUTTON
+          SizedBox(
+            width: 120,
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(6),
+                onTap: () => _openAttachDialog(task),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: task.attachments.isNotEmpty ? const Color(0xFFEFF6FF) : const Color(0xFFF1F5F9),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(
+                      color: task.attachments.isNotEmpty ? const Color(0xFFBFDBFE) : const Color(0xFFE2E8F0),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        task.attachments.isNotEmpty ? Icons.image_rounded : Icons.attach_file_rounded,
+                        size: 13,
+                        color: task.attachments.isNotEmpty ? const Color(0xFF2563EB) : const Color(0xFF64748B),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        task.attachments.isNotEmpty ? '${task.attachments.length} files' : '+ Attach',
+                        style: GoogleFonts.jetBrainsMono(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                          color: task.attachments.isNotEmpty ? const Color(0xFF1D4ED8) : const Color(0xFF64748B),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+          // STATUS PILL
           SizedBox(
             width: 130,
             child: Align(
               alignment: Alignment.centerLeft,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: task.status.bgColor,
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 5,
-                      height: 5,
-                      decoration: BoxDecoration(
-                        color: task.status.dotColor,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(width: 5),
-                    Flexible(
-                      child: Text(
-                        task.status.label,
-                        style: GoogleFonts.jetBrainsMono(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w600,
-                          color: task.status.textColor,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(6),
+                onTap: () => _openUpdateStatusDialog(task),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: task.status.bgColor,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 5,
+                        height: 5,
+                        decoration: BoxDecoration(
+                          color: task.status.dotColor,
+                          shape: BoxShape.circle,
                         ),
-                        overflow: TextOverflow.ellipsis,
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: 5),
+                      Flexible(
+                        child: Text(
+                          task.status.label,
+                          style: GoogleFonts.jetBrainsMono(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            color: task.status.textColor,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -1418,7 +2220,7 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
 
           // TIME WINDOW / TOTAL
           SizedBox(
-            width: 165,
+            width: 155,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
@@ -1442,33 +2244,80 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
             ),
           ),
 
-          // Context 3-dots action menu
+          // Context 3-dots action menu with Update Status, Edit, Attach, Delete
           SizedBox(
-            width: 32,
+            width: 36,
             child: Align(
               alignment: Alignment.centerRight,
               child: PopupMenuButton<String>(
-                icon: const Icon(Icons.more_vert, size: 16, color: Color(0xFF94A3B8)),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                icon: const Icon(Icons.more_vert, size: 18, color: Color(0xFF64748B)),
+                tooltip: 'Task Actions',
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                elevation: 4,
                 onSelected: (action) {
-                  if (action == 'delete') {
-                    setState(() {
-                      _tasks.removeWhere((t) => t.id == task.id);
-                    });
+                  if (action == 'status') {
+                    _openUpdateStatusDialog(task);
+                  } else if (action == 'edit') {
+                    _openEditTaskDialog(task);
+                  } else if (action == 'attach') {
+                    _openAttachDialog(task);
+                  } else if (action == 'delete') {
+                    _openDeleteConfirmDialog(task);
                   }
                 },
                 itemBuilder: (context) => [
-                  const PopupMenuItem(
+                  PopupMenuItem(
+                    value: 'status',
+                    child: Row(
+                      children: [
+                        const Icon(Icons.published_with_changes_rounded, size: 16, color: Color(0xFF2563EB)),
+                        const SizedBox(width: 10),
+                        Text(
+                          'Update Status',
+                          style: GoogleFonts.inter(fontSize: 12.5, fontWeight: FontWeight.w600, color: const Color(0xFF1E293B)),
+                        ),
+                      ],
+                    ),
+                  ),
+                  PopupMenuItem(
                     value: 'edit',
-                    child: Text('Edit Task Details'),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.edit_outlined, size: 16, color: Color(0xFF4F46E5)),
+                        const SizedBox(width: 10),
+                        Text(
+                          'Edit Task',
+                          style: GoogleFonts.inter(fontSize: 12.5, fontWeight: FontWeight.w600, color: const Color(0xFF1E293B)),
+                        ),
+                      ],
+                    ),
                   ),
-                  const PopupMenuItem(
-                    value: 'clock',
-                    child: Text('Start Stopwatch'),
+                  PopupMenuItem(
+                    value: 'attach',
+                    child: Row(
+                      children: [
+                        const Icon(Icons.attach_file_rounded, size: 16, color: Color(0xFF059669)),
+                        const SizedBox(width: 10),
+                        Text(
+                          'Attach Screenshot',
+                          style: GoogleFonts.inter(fontSize: 12.5, fontWeight: FontWeight.w600, color: const Color(0xFF1E293B)),
+                        ),
+                      ],
+                    ),
                   ),
-                  const PopupMenuItem(
+                  const PopupMenuDivider(height: 1),
+                  PopupMenuItem(
                     value: 'delete',
-                    child: Text('Delete Assignment', style: TextStyle(color: Colors.red)),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.delete_outline_rounded, size: 16, color: Color(0xFFDC2626)),
+                        const SizedBox(width: 10),
+                        Text(
+                          'Delete Task',
+                          style: GoogleFonts.inter(fontSize: 12.5, fontWeight: FontWeight.w600, color: const Color(0xFFDC2626)),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
