@@ -121,6 +121,12 @@ class StudioWorkboardScreen extends StatefulWidget {
 }
 
 class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
+  String _selectedDateFilter = 'Today'; // 'Today', 'Yesterday', 'Custom'
+  DateTime _selectedCustomDate = DateTime(2024, 10, 22);
+
+  static const String kTodayDateStr = 'Oct 24, 2024';
+  static const String kYesterdayDateStr = 'Oct 23, 2024';
+
   String _selectedDesigner = 'All 4';
   String _selectedStatus = 'All';
   String _searchQuery = '';
@@ -140,6 +146,8 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
   @override
   void initState() {
     super.initState();
+    _selectedDateFilter = 'Today';
+    _selectedCustomDate = DateTime(2024, 10, 22);
     _startTimer();
     _initData();
   }
@@ -161,6 +169,73 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
     return '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
   }
 
+  String _formatDate(DateTime? dt) {
+    if (dt == null) return 'Oct 22, 2024';
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    final mIndex = (dt.month - 1).clamp(0, 11);
+    return '${months[mIndex]} ${dt.day.toString().padLeft(2, '0')}, ${dt.year}';
+  }
+
+  String _getActiveDateString() {
+    if (_selectedDateFilter == 'Yesterday') return kYesterdayDateStr;
+    if (_selectedDateFilter == 'Last 7 Days') return 'Last 7 Days (Oct 18 - 24)';
+    if (_selectedDateFilter == 'Last 14 Days') return 'Last 14 Days (Oct 11 - 24)';
+    if (_selectedDateFilter == 'Custom') {
+      return _formatDate(_selectedCustomDate);
+    }
+    return kTodayDateStr;
+  }
+
+  DateTime _parseTaskDate(String dateStr) {
+    try {
+      final parts = dateStr.replaceAll(',', '').split(' ');
+      if (parts.length >= 3) {
+        const months = {
+          'Jan': 1, 'Feb': 2, 'Mar': 3, 'Apr': 4, 'May': 5, 'Jun': 6,
+          'Jul': 7, 'Aug': 8, 'Sep': 9, 'Oct': 10, 'Nov': 11, 'Dec': 12
+        };
+        final month = months[parts[0]] ?? 10;
+        final day = int.tryParse(parts[1]) ?? 24;
+        final year = int.tryParse(parts[2]) ?? 2024;
+        return DateTime(year, month, day);
+      }
+    } catch (_) {}
+    return DateTime(2024, 10, 24);
+  }
+
+  bool _isTaskInActiveTimeframe(StudioTask task) {
+    final isGlobalStatusFilter = _selectedStatus == 'In Progress' ||
+        _selectedStatus == 'In Review' ||
+        _selectedStatus == 'Pending';
+
+    final taskDate = _parseTaskDate(task.date);
+    final refDate = DateTime(2024, 10, 24); // Reference "Today" date
+    final diff = refDate.difference(taskDate).inDays;
+
+    if (isGlobalStatusFilter) {
+      // When In Progress, In Review, or Pending is active:
+      // If user selected Last 7 Days, check within 7 days.
+      // Otherwise default to the 14 days active timeframe window.
+      if (_selectedDateFilter == 'Last 7 Days') {
+        return diff >= 0 && diff <= 7;
+      }
+      return diff >= 0 && diff <= 14;
+    }
+
+    if (_selectedDateFilter == 'Today') {
+      return task.date == kTodayDateStr;
+    } else if (_selectedDateFilter == 'Yesterday') {
+      return task.date == kYesterdayDateStr;
+    } else if (_selectedDateFilter == 'Last 7 Days') {
+      return diff >= 0 && diff <= 7;
+    } else if (_selectedDateFilter == 'Last 14 Days') {
+      return diff >= 0 && diff <= 14;
+    } else if (_selectedDateFilter == 'Custom') {
+      return task.date == _formatDate(_selectedCustomDate);
+    }
+    return true;
+  }
+
   @override
   void dispose() {
     _timer.cancel();
@@ -171,6 +246,7 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
 
   void _initData() {
     _tasks = [
+      // --- TODAY (Oct 24, 2024) ---
       StudioTask(
         id: '1',
         date: 'Oct 24, 2024',
@@ -180,7 +256,7 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
         workName: 'Brand Identity Overhaul',
         clientName: 'Veloce Mobility',
         typeTag: 'Logo / System',
-        workBrief: 'Redefine typographic...',
+        workBrief: 'Redefine typographic hierarchy & token definitions',
         status: TaskStatus.inProgress,
         timeWindow: '09:30 AM - 01:30 PM',
         timeLogged: '4h 00m logged',
@@ -210,7 +286,7 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
         workName: 'Summer Music Poster',
         clientName: 'Kyoto Soundfest',
         typeTag: 'Poster',
-        workBrief: 'Completed dual-run 3-...',
+        workBrief: 'Completed dual-run 3-color spot separation vectors',
         status: TaskStatus.completed,
         timeWindow: '08:00 AM - 11:30 AM',
         timeLogged: '3h 30m logged',
@@ -233,7 +309,7 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
         workName: 'Product Reel 3D',
         clientName: 'Sona Acoustics',
         typeTag: 'Video / 3D',
-        workBrief: 'Constructed 15-second flui...',
+        workBrief: 'Constructed 15-second fluid metallic mesh dynamics',
         status: TaskStatus.inReview,
         timeWindow: '10:00 AM - 03:00 PM',
         timeLogged: '5h 00m logged',
@@ -256,11 +332,13 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
         workName: 'Apparel Lookbook Retouch',
         clientName: 'Studio NORD',
         typeTag: 'Editing / Retouch',
-        workBrief: 'Batch balance 24 high-...',
+        workBrief: 'Batch balance 24 high-key autumn studio portraits',
         status: TaskStatus.inProgress,
         timeWindow: '01:00 PM - 05:00 PM',
         timeLogged: '4h 00m logged',
       ),
+
+      // --- YESTERDAY (Oct 23, 2024) ---
       StudioTask(
         id: '5',
         date: 'Oct 23, 2024',
@@ -270,10 +348,19 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
         workName: 'Kiosk Touch UI Prototype',
         clientName: 'Museum of Craft',
         typeTag: 'UI / UX',
-        workBrief: 'Drafting 4K touchscreen...',
+        workBrief: 'Drafting 4K interactive exhibition wayfinding map',
         status: TaskStatus.pending,
         timeWindow: 'Pending Start',
         timeLogged: 'Est: 6h 00m',
+        attachments: [
+          TaskAttachment(
+            id: 'att-5',
+            name: 'Museum_Kiosk_Figma_Flow.png',
+            imageUrl: 'https://images.unsplash.com/photo-1581291518857-4e27b48ff24e?w=600&auto=format&fit=crop&q=80',
+            fileSize: '1.4 MB',
+            uploadedAt: '02:45 PM',
+          ),
+        ],
       ),
       StudioTask(
         id: '6',
@@ -284,10 +371,346 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
         workName: 'Editorial Layout Rules',
         clientName: 'Forma Press',
         typeTag: 'Poster / Print',
-        workBrief: 'Building modular...',
+        workBrief: 'Building modular grid system and print catalog plates',
+        status: TaskStatus.completed,
+        timeWindow: '01:30 PM - 06:00 PM',
+        timeLogged: '4h 30m logged',
+        attachments: [
+          TaskAttachment(
+            id: 'att-6',
+            name: 'Forma_Grid_Proof_Sheet.pdf',
+            imageUrl: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600&auto=format&fit=crop&q=80',
+            fileSize: '2.1 MB',
+            uploadedAt: '05:40 PM',
+          ),
+        ],
+      ),
+      StudioTask(
+        id: '7',
+        date: 'Oct 23, 2024',
+        designerName: 'Maya Patel',
+        designerRole: '3D Motion',
+        avatarUrl: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80',
+        workName: 'Packaging 3D Render Shaders',
+        clientName: 'Aura Skincare',
+        typeTag: 'Video / 3D',
+        workBrief: 'Realistic frosted glass and liquid refraction simulation',
+        status: TaskStatus.inReview,
+        timeWindow: '10:00 AM - 03:30 PM',
+        timeLogged: '5h 30m logged',
+      ),
+      StudioTask(
+        id: '8',
+        date: 'Oct 23, 2024',
+        designerName: 'Liam Vance',
+        designerRole: 'Digital Retouch',
+        avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
+        workName: 'E-commerce Lookbook Batch Color',
+        clientName: 'Studio NORD',
+        typeTag: 'Editing / Retouch',
+        workBrief: 'Skin tone normalization & shadow balancing across 40 looks',
+        status: TaskStatus.completed,
+        timeWindow: '11:00 AM - 05:00 PM',
+        timeLogged: '6h 00m logged',
+        attachments: [
+          TaskAttachment(
+            id: 'att-7',
+            name: 'Nord_Retouch_Contact_Sheet.jpg',
+            imageUrl: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=600&auto=format&fit=crop&q=80',
+            fileSize: '3.4 MB',
+            uploadedAt: '04:55 PM',
+          ),
+        ],
+      ),
+
+      // --- 3 DAYS AGO (Oct 22, 2024) ---
+      StudioTask(
+        id: '9',
+        date: 'Oct 22, 2024',
+        designerName: 'Elena Rostova',
+        designerRole: 'Lead Visual',
+        avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+        workName: 'Design System Typography Tokens',
+        clientName: 'Veloce Mobility',
+        typeTag: 'UI / UX',
+        workBrief: 'Figma component master library and responsive typography set',
+        status: TaskStatus.completed,
+        timeWindow: '09:00 AM - 02:00 PM',
+        timeLogged: '5h 00m logged',
+      ),
+      StudioTask(
+        id: '10',
+        date: 'Oct 22, 2024',
+        designerName: 'Marcus Chen',
+        designerRole: 'Graphic Design',
+        avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
+        workName: 'Global Conference Badge Kit',
+        clientName: 'Kyoto Soundfest',
+        typeTag: 'Poster / Print',
+        workBrief: 'Attendee passes, VIP lanyard badges & spot-UV artwork specs',
+        status: TaskStatus.pending,
+        timeWindow: 'Pending Start',
+        timeLogged: 'Est: 4h 00m',
+      ),
+      StudioTask(
+        id: '11',
+        date: 'Oct 22, 2024',
+        designerName: 'Maya Patel',
+        designerRole: '3D Motion',
+        avatarUrl: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80',
+        workName: 'Dynamic Title Animation Loop',
+        clientName: 'Sona Acoustics',
+        typeTag: 'Video / 3D',
+        workBrief: 'Kinetic 3D typography intro and sound-reactive displacement',
+        status: TaskStatus.inReview,
+        timeWindow: '09:30 AM - 04:00 PM',
+        timeLogged: '6h 30m logged',
+      ),
+      StudioTask(
+        id: '12',
+        date: 'Oct 22, 2024',
+        designerName: 'Liam Vance',
+        designerRole: 'Digital Retouch',
+        avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
+        workName: 'Editorial Magazine Spread Grading',
+        clientName: 'Forma Press',
+        typeTag: 'Editing / Retouch',
+        workBrief: 'Double-page hero color grading with CMYK print profiles',
         status: TaskStatus.inProgress,
-        timeWindow: '01:30 PM - 03:30 PM',
-        timeLogged: '2h 00m logged',
+        timeWindow: '01:00 PM - 05:00 PM',
+        timeLogged: '4h 00m logged',
+      ),
+
+      // --- 5 DAYS AGO (Oct 20, 2024) ---
+      StudioTask(
+        id: '13',
+        date: 'Oct 20, 2024',
+        designerName: 'Elena Rostova',
+        designerRole: 'Lead Visual',
+        avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+        workName: 'Brand Color Token Extractor',
+        clientName: 'Veloce Mobility',
+        typeTag: 'UI / UX',
+        workBrief: 'Dynamic light/dark contrast token generator for app styles',
+        status: TaskStatus.inProgress,
+        timeWindow: '10:00 AM - 02:00 PM',
+        timeLogged: '3h 30m logged',
+      ),
+      StudioTask(
+        id: '14',
+        date: 'Oct 20, 2024',
+        designerName: 'Marcus Chen',
+        designerRole: 'Graphic Design',
+        avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
+        workName: 'Soundfest Ticket Layouts',
+        clientName: 'Kyoto Soundfest',
+        typeTag: 'Poster / Print',
+        workBrief: 'Digital wallet pass designs and QR barcode verification spec',
+        status: TaskStatus.completed,
+        timeWindow: '09:00 AM - 01:00 PM',
+        timeLogged: '4h 00m logged',
+      ),
+      StudioTask(
+        id: '15',
+        date: 'Oct 20, 2024',
+        designerName: 'Maya Patel',
+        designerRole: '3D Motion',
+        avatarUrl: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80',
+        workName: 'Kinetic 3D Logo Intro',
+        clientName: 'Sona Acoustics',
+        typeTag: 'Video / 3D',
+        workBrief: 'Polished brand reveal with procedural glass caustics',
+        status: TaskStatus.inReview,
+        timeWindow: '11:00 AM - 04:30 PM',
+        timeLogged: '5h 00m logged',
+      ),
+      StudioTask(
+        id: '16',
+        date: 'Oct 20, 2024',
+        designerName: 'Liam Vance',
+        designerRole: 'Digital Retouch',
+        avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
+        workName: 'Lookbook Skin Frequency Separation',
+        clientName: 'Studio NORD',
+        typeTag: 'Editing / Retouch',
+        workBrief: 'Natural texture preservation for high-res studio billboard',
+        status: TaskStatus.completed,
+        timeWindow: '01:30 PM - 06:00 PM',
+        timeLogged: '4h 30m logged',
+      ),
+
+      // --- 7 DAYS AGO (Oct 18, 2024) ---
+      StudioTask(
+        id: '17',
+        date: 'Oct 18, 2024',
+        designerName: 'Elena Rostova',
+        designerRole: 'Lead Visual',
+        avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+        workName: 'Mobile Design System Architecture',
+        clientName: 'Museum of Craft',
+        typeTag: 'UI / UX',
+        workBrief: 'Comprehensive component hierarchy for mobile ticketing',
+        status: TaskStatus.inProgress,
+        timeWindow: '09:00 AM - 02:30 PM',
+        timeLogged: '5h 00m logged',
+      ),
+      StudioTask(
+        id: '18',
+        date: 'Oct 18, 2024',
+        designerName: 'Marcus Chen',
+        designerRole: 'Graphic Design',
+        avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
+        workName: 'Typeface Pairing Spec Sheet',
+        clientName: 'Forma Press',
+        typeTag: 'Poster / Print',
+        workBrief: 'Editorial typography combinations across 12 layout templates',
+        status: TaskStatus.completed,
+        timeWindow: '10:00 AM - 01:30 PM',
+        timeLogged: '3h 30m logged',
+      ),
+      StudioTask(
+        id: '19',
+        date: 'Oct 18, 2024',
+        designerName: 'Maya Patel',
+        designerRole: '3D Motion',
+        avatarUrl: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80',
+        workName: 'Holographic UI Animation Mockup',
+        clientName: 'Sona Acoustics',
+        typeTag: 'Video / 3D',
+        workBrief: 'Futuristic audio interface concept animation',
+        status: TaskStatus.pending,
+        timeWindow: 'Pending Start',
+        timeLogged: 'Est: 5h 00m',
+      ),
+      StudioTask(
+        id: '20',
+        date: 'Oct 18, 2024',
+        designerName: 'Liam Vance',
+        designerRole: 'Digital Retouch',
+        avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
+        workName: 'Autumn Catalog Color Grading',
+        clientName: 'Studio NORD',
+        typeTag: 'Editing / Retouch',
+        workBrief: 'Warm palette grading across 30 outdoor campaign stills',
+        status: TaskStatus.completed,
+        timeWindow: '11:00 AM - 05:30 PM',
+        timeLogged: '6h 00m logged',
+      ),
+
+      // --- 10 DAYS AGO (Oct 15, 2024) ---
+      StudioTask(
+        id: '21',
+        date: 'Oct 15, 2024',
+        designerName: 'Elena Rostova',
+        designerRole: 'Lead Visual',
+        avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+        workName: 'App Navigation System Redesign',
+        clientName: 'Veloce Mobility',
+        typeTag: 'UI / UX',
+        workBrief: 'Bottom bar gesture animations and modular drawer prototypes',
+        status: TaskStatus.completed,
+        timeWindow: '09:00 AM - 03:30 PM',
+        timeLogged: '6h 00m logged',
+      ),
+      StudioTask(
+        id: '22',
+        date: 'Oct 15, 2024',
+        designerName: 'Marcus Chen',
+        designerRole: 'Graphic Design',
+        avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
+        workName: 'Outdoor Billboard Graphics',
+        clientName: 'Kyoto Soundfest',
+        typeTag: 'Poster / Print',
+        workBrief: 'High resolution super-wide format vector assets',
+        status: TaskStatus.inProgress,
+        timeWindow: '01:00 PM - 05:00 PM',
+        timeLogged: '4h 00m logged',
+      ),
+      StudioTask(
+        id: '23',
+        date: 'Oct 15, 2024',
+        designerName: 'Maya Patel',
+        designerRole: '3D Motion',
+        avatarUrl: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80',
+        workName: 'Audio Reactive Particle Sim',
+        clientName: 'Sona Acoustics',
+        typeTag: 'Video / 3D',
+        workBrief: 'GPU accelerated particle waveform visualization',
+        status: TaskStatus.inReview,
+        timeWindow: '10:00 AM - 04:00 PM',
+        timeLogged: '5h 30m logged',
+      ),
+      StudioTask(
+        id: '24',
+        date: 'Oct 15, 2024',
+        designerName: 'Liam Vance',
+        designerRole: 'Digital Retouch',
+        avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
+        workName: 'High-Res Product Cleanup Batch',
+        clientName: 'Forma Press',
+        typeTag: 'Editing / Retouch',
+        workBrief: 'Artifact removal and reflections cleanup on hardware renders',
+        status: TaskStatus.pending,
+        timeWindow: 'Pending Start',
+        timeLogged: 'Est: 4h 30m',
+      ),
+
+      // --- 13 DAYS AGO (Oct 12, 2024) ---
+      StudioTask(
+        id: '25',
+        date: 'Oct 12, 2024',
+        designerName: 'Elena Rostova',
+        designerRole: 'Lead Visual',
+        avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+        workName: 'Iconography Suite (48 Icons)',
+        clientName: 'Museum of Craft',
+        typeTag: 'UI / UX',
+        workBrief: 'Custom stroke weight unified svg icon set',
+        status: TaskStatus.completed,
+        timeWindow: '08:30 AM - 04:00 PM',
+        timeLogged: '7h 00m logged',
+      ),
+      StudioTask(
+        id: '26',
+        date: 'Oct 12, 2024',
+        designerName: 'Marcus Chen',
+        designerRole: 'Graphic Design',
+        avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
+        workName: 'Festival Wristband Print Spec',
+        clientName: 'Kyoto Soundfest',
+        typeTag: 'Poster / Print',
+        workBrief: 'Woven fabric barcode pattern & pantone spot separations',
+        status: TaskStatus.completed,
+        timeWindow: '09:00 AM - 12:00 PM',
+        timeLogged: '3h 00m logged',
+      ),
+      StudioTask(
+        id: '27',
+        date: 'Oct 12, 2024',
+        designerName: 'Maya Patel',
+        designerRole: '3D Motion',
+        avatarUrl: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80',
+        workName: '3D Speaker Exploded View Animation',
+        clientName: 'Sona Acoustics',
+        typeTag: 'Video / 3D',
+        workBrief: 'Technical breakdown showing internal acoustic chamber & magnet',
+        status: TaskStatus.completed,
+        timeWindow: '10:00 AM - 04:30 PM',
+        timeLogged: '6h 00m logged',
+      ),
+      StudioTask(
+        id: '28',
+        date: 'Oct 12, 2024',
+        designerName: 'Liam Vance',
+        designerRole: 'Digital Retouch',
+        avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
+        workName: 'Raw Exposure Correction Pass',
+        clientName: 'Studio NORD',
+        typeTag: 'Editing / Retouch',
+        workBrief: 'Batch exposure matching across 60 camera angles',
+        status: TaskStatus.completed,
+        timeWindow: '11:00 AM - 04:30 PM',
+        timeLogged: '5h 00m logged',
       ),
     ];
 
@@ -324,6 +747,9 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
 
   List<StudioTask> get _filteredTasks {
     return _tasks.where((task) {
+      if (!_isTaskInActiveTimeframe(task)) {
+        return false;
+      }
       if (_selectedDesigner != 'All 4') {
         if (!task.designerName.toLowerCase().contains(_selectedDesigner.toLowerCase())) {
           return false;
@@ -1201,7 +1627,7 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
                                 0,
                                 StudioTask(
                                   id: DateTime.now().millisecondsSinceEpoch.toString(),
-                                  date: 'Oct 24, 2024',
+                                  date: _getActiveDateString(),
                                   designerName: selectedDesignerName,
                                   designerRole: role,
                                   avatarUrl: avatar,
@@ -1577,36 +2003,66 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
 
   // --- METRICS ROW (4 CARDS) ---
   Widget _buildMetricsRow({required bool isNarrow}) {
+    final dayTasks = _tasks.where((t) => _isTaskInActiveTimeframe(t)).toList();
+    final activeCount = dayTasks.where((t) => t.status == TaskStatus.inProgress || t.status == TaskStatus.inReview || t.status == TaskStatus.pending).length;
+    final completedCount = dayTasks.where((t) => t.status == TaskStatus.completed).length;
+    final activeStaffCount = dayTasks.map((t) => t.designerName).toSet().length;
+
+    double totalHours = 0.0;
+    for (final t in dayTasks) {
+      final match = RegExp(r'(\d+(?:\.\d+)?)\s*h').firstMatch(t.timeLogged);
+      if (match != null) {
+        totalHours += double.tryParse(match.group(1)!) ?? 0;
+      }
+    }
+    final formattedHours = totalHours.toStringAsFixed(totalHours.truncateToDouble() == totalHours ? 0 : 1);
+
+    String loggedLabel = 'TODAY LOGGED';
+    String completedLabel = 'COMPLETED TODAY';
+    if (_selectedDateFilter == 'Yesterday') {
+      loggedLabel = 'YESTERDAY LOGGED';
+      completedLabel = 'COMPLETED YESTERDAY';
+    } else if (_selectedDateFilter == 'Last 7 Days') {
+      loggedLabel = 'LAST 7 DAYS';
+      completedLabel = 'COMPLETED (7D)';
+    } else if (_selectedDateFilter == 'Last 14 Days') {
+      loggedLabel = 'LAST 14 DAYS';
+      completedLabel = 'COMPLETED (14D)';
+    } else if (_selectedDateFilter == 'Custom') {
+      loggedLabel = 'DAY LOGGED';
+      completedLabel = 'COMPLETED OUTPUT';
+    }
+
     final c1 = _buildMetricCard(
       icon: Icons.layers_outlined,
       iconBg: const Color(0xFFEFF6FF),
       iconColor: const Color(0xFF2563EB),
       label: 'ACTIVE TASKS',
-      boldValue: '7',
+      boldValue: '$activeCount',
       subText: 'in progress',
     );
     final c2 = _buildMetricCard(
       icon: Icons.access_time_rounded,
       iconBg: const Color(0xFFEEF2FF),
       iconColor: const Color(0xFF4F46E5),
-      label: 'TODAY LOGGED',
-      boldValue: '18.5',
+      label: loggedLabel,
+      boldValue: formattedHours,
       subText: 'hrs',
     );
     final c3 = _buildMetricCard(
       icon: Icons.verified_outlined,
       iconBg: const Color(0xFFECFDF5),
       iconColor: const Color(0xFF059669),
-      label: 'COMPLETED TODAY',
-      boldValue: '5',
+      label: completedLabel,
+      boldValue: '$completedCount',
       subText: 'deliverables',
     );
     final c4 = _buildMetricCard(
       icon: Icons.people_alt_outlined,
       iconBg: const Color(0xFFFDF2F8),
       iconColor: const Color(0xFFDB2777),
-      label: 'ASSIGNED STAFF',
-      boldValue: '4',
+      label: 'ACTIVE STAFF',
+      boldValue: '$activeStaffCount',
       subText: 'designers',
     );
 
@@ -1728,6 +2184,41 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
         crossAxisAlignment: WrapCrossAlignment.center,
         alignment: WrapAlignment.spaceBetween,
         children: [
+          // Timeframe Selector
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'DAY:',
+                style: GoogleFonts.jetBrainsMono(
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.8,
+                  color: const Color(0xFF8E9BAE),
+                ),
+              ),
+              const SizedBox(width: 8),
+              _buildFilterChip('Today', isSelected: _selectedDateFilter == 'Today', onSelected: () {
+                setState(() => _selectedDateFilter = 'Today');
+              }),
+              const SizedBox(width: 6),
+              _buildFilterChip('Yesterday', isSelected: _selectedDateFilter == 'Yesterday', onSelected: () {
+                setState(() => _selectedDateFilter = 'Yesterday');
+              }),
+              const SizedBox(width: 6),
+              _buildFilterChip('Last 7 Days', isSelected: _selectedDateFilter == 'Last 7 Days', onSelected: () {
+                setState(() => _selectedDateFilter = 'Last 7 Days');
+              }),
+              const SizedBox(width: 6),
+              _buildFilterChip('Last 14 Days', isSelected: _selectedDateFilter == 'Last 14 Days', onSelected: () {
+                setState(() => _selectedDateFilter = 'Last 14 Days');
+              }),
+              const SizedBox(width: 6),
+              _buildCustomDateChip(),
+            ],
+          ),
+
+          // Designer Selector
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -1740,7 +2231,7 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
                   color: const Color(0xFF8E9BAE),
                 ),
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: 8),
               _buildFilterChip('All 4', isSelected: _selectedDesigner == 'All 4', onSelected: () {
                 setState(() => _selectedDesigner = 'All 4');
               }),
@@ -1762,6 +2253,8 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
               }),
             ],
           ),
+
+          // Status Selector
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -1774,21 +2267,36 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
                   color: const Color(0xFF8E9BAE),
                 ),
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: 8),
               _buildFilterChip('All', isSelected: _selectedStatus == 'All', onSelected: () {
                 setState(() => _selectedStatus = 'All');
               }),
               const SizedBox(width: 6),
               _buildFilterChip('In Progress', isSelected: _selectedStatus == 'In Progress', onSelected: () {
-                setState(() => _selectedStatus = 'In Progress');
+                setState(() {
+                  _selectedStatus = 'In Progress';
+                  if (_selectedDateFilter == 'Today' || _selectedDateFilter == 'Yesterday' || _selectedDateFilter == 'Custom') {
+                    _selectedDateFilter = 'Last 14 Days';
+                  }
+                });
               }),
               const SizedBox(width: 6),
               _buildFilterChip('In Review', isSelected: _selectedStatus == 'In Review', onSelected: () {
-                setState(() => _selectedStatus = 'In Review');
+                setState(() {
+                  _selectedStatus = 'In Review';
+                  if (_selectedDateFilter == 'Today' || _selectedDateFilter == 'Yesterday' || _selectedDateFilter == 'Custom') {
+                    _selectedDateFilter = 'Last 14 Days';
+                  }
+                });
               }),
               const SizedBox(width: 6),
               _buildFilterChip('Pending', isSelected: _selectedStatus == 'Pending', onSelected: () {
-                setState(() => _selectedStatus = 'Pending');
+                setState(() {
+                  _selectedStatus = 'Pending';
+                  if (_selectedDateFilter == 'Today' || _selectedDateFilter == 'Yesterday' || _selectedDateFilter == 'Custom') {
+                    _selectedDateFilter = 'Last 14 Days';
+                  }
+                });
               }),
               const SizedBox(width: 6),
               _buildFilterChip('Completed', isSelected: _selectedStatus == 'Completed', onSelected: () {
@@ -1796,8 +2304,10 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
               }),
             ],
           ),
+
+          // Search Field
           Container(
-            width: 210,
+            width: 200,
             height: 32,
             decoration: BoxDecoration(
               color: const Color(0xFFF4F6FB),
@@ -1837,6 +2347,67 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
     );
   }
 
+  Widget _buildCustomDateChip() {
+    final isSelected = _selectedDateFilter == 'Custom';
+    final dateLabel = isSelected ? _formatDate(_selectedCustomDate) : 'Custom Date';
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(6),
+      onTap: () async {
+        final picked = await showDatePicker(
+          context: context,
+          initialDate: _selectedCustomDate,
+          firstDate: DateTime(2020),
+          lastDate: DateTime(2030),
+          builder: (context, child) {
+            return Theme(
+              data: Theme.of(context).copyWith(
+                colorScheme: const ColorScheme.light(
+                  primary: Color(0xFF25206A),
+                  onPrimary: Colors.white,
+                  onSurface: Color(0xFF0F172A),
+                ),
+              ),
+              child: child!,
+            );
+          },
+        );
+        if (picked != null) {
+          setState(() {
+            _selectedCustomDate = picked;
+            _selectedDateFilter = 'Custom';
+          });
+        }
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFF25206A) : const Color(0xFFF1F4F9),
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.calendar_today_rounded,
+              size: 12,
+              color: isSelected ? Colors.white : const Color(0xFF475569),
+            ),
+            const SizedBox(width: 5),
+            Text(
+              dateLabel,
+              style: GoogleFonts.inter(
+                fontSize: 11.5,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                color: isSelected ? Colors.white : const Color(0xFF475569),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildFilterChip(String label, {required bool isSelected, required VoidCallback onSelected}) {
     return InkWell(
       borderRadius: BorderRadius.circular(6),
@@ -1862,6 +2433,9 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
   // --- DATA TABLE CARD ---
   Widget _buildDataTableCard() {
     final tasks = _filteredTasks;
+    final isGlobalStatusFilter = _selectedStatus == 'In Progress' ||
+        _selectedStatus == 'In Review' ||
+        _selectedStatus == 'Pending';
 
     return Container(
       decoration: BoxDecoration(
@@ -1902,15 +2476,31 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
           // Table Rows
           if (tasks.isEmpty)
             Padding(
-              padding: const EdgeInsets.all(40),
+              padding: const EdgeInsets.symmetric(vertical: 48, horizontal: 24),
               child: Center(
                 child: Column(
                   children: [
-                    const Icon(Icons.inbox_outlined, size: 36, color: Color(0xFF94A3B8)),
-                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFF1F5F9),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.assignment_outlined, size: 30, color: Color(0xFF94A3B8)),
+                    ),
+                    const SizedBox(height: 12),
                     Text(
-                      'No studio assignments match the current filter',
-                      style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF64748B)),
+                      isGlobalStatusFilter
+                          ? 'No $_selectedStatus tasks found in $_selectedDateFilter'
+                          : 'No tasks logged for ${_getActiveDateString()}',
+                      style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: const Color(0xFF334155)),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      isGlobalStatusFilter
+                          ? 'Active tasks in the selected timeframe will appear here.'
+                          : 'Select Today, Yesterday, or click "+ Add New Work" above to log hours for this day.',
+                      style: GoogleFonts.jetBrainsMono(fontSize: 11, color: const Color(0xFF94A3B8)),
                     ),
                   ],
                 ),
@@ -1943,7 +2533,9 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Showing ${tasks.length} studio assignments',
+                  isGlobalStatusFilter
+                      ? 'Showing ${tasks.length} studio assignments ($_selectedStatus • $_selectedDateFilter)'
+                      : 'Showing ${tasks.length} studio assignments for ${_getActiveDateString()} ($_selectedDateFilter)',
                   style: GoogleFonts.jetBrainsMono(
                     fontSize: 11,
                     color: const Color(0xFF8E9BAE),
