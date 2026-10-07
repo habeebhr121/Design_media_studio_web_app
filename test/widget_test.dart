@@ -102,5 +102,31 @@ void main() {
     await tester.tap(workboardTab);
     await tester.pumpAndSettle();
     expect(find.text('Studio Workboard'), findsOneWidget);
+
+    // 7. Test Login Screen navigation, quick switcher, and sign in
+    final loginTab = find.text('Login').first;
+    await tester.tap(loginTab);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Welcome back'), findsOneWidget);
+    expect(find.text('STUDIO ACCESS'), findsOneWidget);
+    expect(find.text('v2.4.0'), findsOneWidget);
+    expect(find.text('Quick switch team member'), findsOneWidget);
+    expect(find.text('Elena'), findsOneWidget);
+    expect(find.text('Marcus'), findsOneWidget);
+    expect(find.text('Maya'), findsOneWidget);
+    expect(find.text('Liam'), findsOneWidget);
+    expect(find.text('Sign In to StudioTrack'), findsOneWidget);
+    expect(find.text('Google Workspace'), findsOneWidget);
+    expect(find.text('Figma SSO'), findsOneWidget);
+
+    // Quick switch to Marcus
+    await tester.tap(find.text('Marcus'));
+    await tester.pumpAndSettle();
+
+    // Click Sign In button to enter Workboard
+    await tester.tap(find.text('Sign In to StudioTrack'));
+    await tester.pumpAndSettle();
+    expect(find.text('Studio Workboard'), findsOneWidget);
   });
 }

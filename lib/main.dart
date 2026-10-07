@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'screens/studio_workboard_screen.dart';
 import 'screens/hours_report_screen.dart';
+import 'screens/login_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -16,7 +17,7 @@ class StudioTrackApp extends StatefulWidget {
 }
 
 class _StudioTrackAppState extends State<StudioTrackApp> {
-  int _currentTabIndex = 0; // 0: Workboard, 1: Hours Report
+  int _currentTabIndex = 0; // 0: Workboard, 1: Hours Report, 2: Login
 
   @override
   Widget build(BuildContext context) {
@@ -34,18 +35,42 @@ class _StudioTrackAppState extends State<StudioTrackApp> {
         fontFamily: GoogleFonts.inter().fontFamily,
       ),
       home: Scaffold(
-        body: _currentTabIndex == 0
-            ? StudioWorkboardScreen(
-                onNavigateToHoursReport: () {
-                  setState(() => _currentTabIndex = 1);
-                },
-              )
-            : HoursReportScreen(
-                onNavigateToWorkboard: () {
-                  setState(() => _currentTabIndex = 0);
-                },
-              ),
+        body: _buildCurrentScreen(),
       ),
     );
   }
+
+  Widget _buildCurrentScreen() {
+    switch (_currentTabIndex) {
+      case 0:
+        return StudioWorkboardScreen(
+          onNavigateToHoursReport: () {
+            setState(() => _currentTabIndex = 1);
+          },
+          onNavigateToLogin: () {
+            setState(() => _currentTabIndex = 2);
+          },
+        );
+      case 1:
+        return HoursReportScreen(
+          onNavigateToWorkboard: () {
+            setState(() => _currentTabIndex = 0);
+          },
+          onNavigateToLogin: () {
+            setState(() => _currentTabIndex = 2);
+          },
+        );
+      case 2:
+      default:
+        return LoginScreen(
+          onLoginSuccess: () {
+            setState(() => _currentTabIndex = 0);
+          },
+          onNavigateToWorkboard: () {
+            setState(() => _currentTabIndex = 0);
+          },
+        );
+    }
+  }
 }
+

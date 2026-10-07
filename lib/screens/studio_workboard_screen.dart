@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:studio_track/data/dummy_data.dart';
 
 // --- DATA MODELS ---
 
@@ -110,10 +111,12 @@ class ScheduledDrop {
 
 class StudioWorkboardScreen extends StatefulWidget {
   final VoidCallback? onNavigateToHoursReport;
+  final VoidCallback? onNavigateToLogin;
 
   const StudioWorkboardScreen({
     super.key,
     this.onNavigateToHoursReport,
+    this.onNavigateToLogin,
   });
 
   @override
@@ -245,474 +248,7 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
   }
 
   void _initData() {
-    _tasks = [
-      // --- TODAY (Oct 24, 2024) ---
-      StudioTask(
-        id: '1',
-        date: 'Oct 24, 2024',
-        designerName: 'Elena Rostova',
-        designerRole: 'Lead Visual',
-        avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-        workName: 'Brand Identity Overhaul',
-        clientName: 'Veloce Mobility',
-        typeTag: 'Logo / System',
-        workBrief: 'Redefine typographic hierarchy & token definitions',
-        status: TaskStatus.inProgress,
-        timeWindow: '09:30 AM - 01:30 PM',
-        timeLogged: '4h 00m logged',
-        attachments: [
-          TaskAttachment(
-            id: 'att-1',
-            name: 'Veloce_Logomark_v2.png',
-            imageUrl: 'https://images.unsplash.com/photo-1600132806370-bf17e65e942f?w=600&auto=format&fit=crop&q=80',
-            fileSize: '420 KB',
-            uploadedAt: '10:45 AM',
-          ),
-          TaskAttachment(
-            id: 'att-2',
-            name: 'Typography_Scale_Spec.png',
-            imageUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&auto=format&fit=crop&q=80',
-            fileSize: '890 KB',
-            uploadedAt: '12:15 PM',
-          ),
-        ],
-      ),
-      StudioTask(
-        id: '2',
-        date: 'Oct 24, 2024',
-        designerName: 'Marcus Chen',
-        designerRole: 'Graphic Design',
-        avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
-        workName: 'Summer Music Poster',
-        clientName: 'Kyoto Soundfest',
-        typeTag: 'Poster',
-        workBrief: 'Completed dual-run 3-color spot separation vectors',
-        status: TaskStatus.completed,
-        timeWindow: '08:00 AM - 11:30 AM',
-        timeLogged: '3h 30m logged',
-        attachments: [
-          TaskAttachment(
-            id: 'att-3',
-            name: 'Kyoto_Poster_Final_Print.jpg',
-            imageUrl: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=600&auto=format&fit=crop&q=80',
-            fileSize: '1.2 MB',
-            uploadedAt: '11:28 AM',
-          ),
-        ],
-      ),
-      StudioTask(
-        id: '3',
-        date: 'Oct 24, 2024',
-        designerName: 'Maya Patel',
-        designerRole: '3D Motion',
-        avatarUrl: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80',
-        workName: 'Product Reel 3D',
-        clientName: 'Sona Acoustics',
-        typeTag: 'Video / 3D',
-        workBrief: 'Constructed 15-second fluid metallic mesh dynamics',
-        status: TaskStatus.inReview,
-        timeWindow: '10:00 AM - 03:00 PM',
-        timeLogged: '5h 00m logged',
-        attachments: [
-          TaskAttachment(
-            id: 'att-4',
-            name: 'Sona_Reel_Render_Keyframe.png',
-            imageUrl: 'https://images.unsplash.com/photo-1634017839464-5c339ebe3cb4?w=600&auto=format&fit=crop&q=80',
-            fileSize: '750 KB',
-            uploadedAt: '02:50 PM',
-          ),
-        ],
-      ),
-      StudioTask(
-        id: '4',
-        date: 'Oct 24, 2024',
-        designerName: 'Liam Vance',
-        designerRole: 'Digital Retouch',
-        avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
-        workName: 'Apparel Lookbook Retouch',
-        clientName: 'Studio NORD',
-        typeTag: 'Editing / Retouch',
-        workBrief: 'Batch balance 24 high-key autumn studio portraits',
-        status: TaskStatus.inProgress,
-        timeWindow: '01:00 PM - 05:00 PM',
-        timeLogged: '4h 00m logged',
-      ),
-
-      // --- YESTERDAY (Oct 23, 2024) ---
-      StudioTask(
-        id: '5',
-        date: 'Oct 23, 2024',
-        designerName: 'Elena Rostova',
-        designerRole: 'Lead Visual',
-        avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-        workName: 'Kiosk Touch UI Prototype',
-        clientName: 'Museum of Craft',
-        typeTag: 'UI / UX',
-        workBrief: 'Drafting 4K interactive exhibition wayfinding map',
-        status: TaskStatus.pending,
-        timeWindow: 'Pending Start',
-        timeLogged: 'Est: 6h 00m',
-        attachments: [
-          TaskAttachment(
-            id: 'att-5',
-            name: 'Museum_Kiosk_Figma_Flow.png',
-            imageUrl: 'https://images.unsplash.com/photo-1581291518857-4e27b48ff24e?w=600&auto=format&fit=crop&q=80',
-            fileSize: '1.4 MB',
-            uploadedAt: '02:45 PM',
-          ),
-        ],
-      ),
-      StudioTask(
-        id: '6',
-        date: 'Oct 23, 2024',
-        designerName: 'Marcus Chen',
-        designerRole: 'Graphic Design',
-        avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
-        workName: 'Editorial Layout Rules',
-        clientName: 'Forma Press',
-        typeTag: 'Poster / Print',
-        workBrief: 'Building modular grid system and print catalog plates',
-        status: TaskStatus.completed,
-        timeWindow: '01:30 PM - 06:00 PM',
-        timeLogged: '4h 30m logged',
-        attachments: [
-          TaskAttachment(
-            id: 'att-6',
-            name: 'Forma_Grid_Proof_Sheet.pdf',
-            imageUrl: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600&auto=format&fit=crop&q=80',
-            fileSize: '2.1 MB',
-            uploadedAt: '05:40 PM',
-          ),
-        ],
-      ),
-      StudioTask(
-        id: '7',
-        date: 'Oct 23, 2024',
-        designerName: 'Maya Patel',
-        designerRole: '3D Motion',
-        avatarUrl: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80',
-        workName: 'Packaging 3D Render Shaders',
-        clientName: 'Aura Skincare',
-        typeTag: 'Video / 3D',
-        workBrief: 'Realistic frosted glass and liquid refraction simulation',
-        status: TaskStatus.inReview,
-        timeWindow: '10:00 AM - 03:30 PM',
-        timeLogged: '5h 30m logged',
-      ),
-      StudioTask(
-        id: '8',
-        date: 'Oct 23, 2024',
-        designerName: 'Liam Vance',
-        designerRole: 'Digital Retouch',
-        avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
-        workName: 'E-commerce Lookbook Batch Color',
-        clientName: 'Studio NORD',
-        typeTag: 'Editing / Retouch',
-        workBrief: 'Skin tone normalization & shadow balancing across 40 looks',
-        status: TaskStatus.completed,
-        timeWindow: '11:00 AM - 05:00 PM',
-        timeLogged: '6h 00m logged',
-        attachments: [
-          TaskAttachment(
-            id: 'att-7',
-            name: 'Nord_Retouch_Contact_Sheet.jpg',
-            imageUrl: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=600&auto=format&fit=crop&q=80',
-            fileSize: '3.4 MB',
-            uploadedAt: '04:55 PM',
-          ),
-        ],
-      ),
-
-      // --- 3 DAYS AGO (Oct 22, 2024) ---
-      StudioTask(
-        id: '9',
-        date: 'Oct 22, 2024',
-        designerName: 'Elena Rostova',
-        designerRole: 'Lead Visual',
-        avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-        workName: 'Design System Typography Tokens',
-        clientName: 'Veloce Mobility',
-        typeTag: 'UI / UX',
-        workBrief: 'Figma component master library and responsive typography set',
-        status: TaskStatus.completed,
-        timeWindow: '09:00 AM - 02:00 PM',
-        timeLogged: '5h 00m logged',
-      ),
-      StudioTask(
-        id: '10',
-        date: 'Oct 22, 2024',
-        designerName: 'Marcus Chen',
-        designerRole: 'Graphic Design',
-        avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
-        workName: 'Global Conference Badge Kit',
-        clientName: 'Kyoto Soundfest',
-        typeTag: 'Poster / Print',
-        workBrief: 'Attendee passes, VIP lanyard badges & spot-UV artwork specs',
-        status: TaskStatus.pending,
-        timeWindow: 'Pending Start',
-        timeLogged: 'Est: 4h 00m',
-      ),
-      StudioTask(
-        id: '11',
-        date: 'Oct 22, 2024',
-        designerName: 'Maya Patel',
-        designerRole: '3D Motion',
-        avatarUrl: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80',
-        workName: 'Dynamic Title Animation Loop',
-        clientName: 'Sona Acoustics',
-        typeTag: 'Video / 3D',
-        workBrief: 'Kinetic 3D typography intro and sound-reactive displacement',
-        status: TaskStatus.inReview,
-        timeWindow: '09:30 AM - 04:00 PM',
-        timeLogged: '6h 30m logged',
-      ),
-      StudioTask(
-        id: '12',
-        date: 'Oct 22, 2024',
-        designerName: 'Liam Vance',
-        designerRole: 'Digital Retouch',
-        avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
-        workName: 'Editorial Magazine Spread Grading',
-        clientName: 'Forma Press',
-        typeTag: 'Editing / Retouch',
-        workBrief: 'Double-page hero color grading with CMYK print profiles',
-        status: TaskStatus.inProgress,
-        timeWindow: '01:00 PM - 05:00 PM',
-        timeLogged: '4h 00m logged',
-      ),
-
-      // --- 5 DAYS AGO (Oct 20, 2024) ---
-      StudioTask(
-        id: '13',
-        date: 'Oct 20, 2024',
-        designerName: 'Elena Rostova',
-        designerRole: 'Lead Visual',
-        avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-        workName: 'Brand Color Token Extractor',
-        clientName: 'Veloce Mobility',
-        typeTag: 'UI / UX',
-        workBrief: 'Dynamic light/dark contrast token generator for app styles',
-        status: TaskStatus.inProgress,
-        timeWindow: '10:00 AM - 02:00 PM',
-        timeLogged: '3h 30m logged',
-      ),
-      StudioTask(
-        id: '14',
-        date: 'Oct 20, 2024',
-        designerName: 'Marcus Chen',
-        designerRole: 'Graphic Design',
-        avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
-        workName: 'Soundfest Ticket Layouts',
-        clientName: 'Kyoto Soundfest',
-        typeTag: 'Poster / Print',
-        workBrief: 'Digital wallet pass designs and QR barcode verification spec',
-        status: TaskStatus.completed,
-        timeWindow: '09:00 AM - 01:00 PM',
-        timeLogged: '4h 00m logged',
-      ),
-      StudioTask(
-        id: '15',
-        date: 'Oct 20, 2024',
-        designerName: 'Maya Patel',
-        designerRole: '3D Motion',
-        avatarUrl: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80',
-        workName: 'Kinetic 3D Logo Intro',
-        clientName: 'Sona Acoustics',
-        typeTag: 'Video / 3D',
-        workBrief: 'Polished brand reveal with procedural glass caustics',
-        status: TaskStatus.inReview,
-        timeWindow: '11:00 AM - 04:30 PM',
-        timeLogged: '5h 00m logged',
-      ),
-      StudioTask(
-        id: '16',
-        date: 'Oct 20, 2024',
-        designerName: 'Liam Vance',
-        designerRole: 'Digital Retouch',
-        avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
-        workName: 'Lookbook Skin Frequency Separation',
-        clientName: 'Studio NORD',
-        typeTag: 'Editing / Retouch',
-        workBrief: 'Natural texture preservation for high-res studio billboard',
-        status: TaskStatus.completed,
-        timeWindow: '01:30 PM - 06:00 PM',
-        timeLogged: '4h 30m logged',
-      ),
-
-      // --- 7 DAYS AGO (Oct 18, 2024) ---
-      StudioTask(
-        id: '17',
-        date: 'Oct 18, 2024',
-        designerName: 'Elena Rostova',
-        designerRole: 'Lead Visual',
-        avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-        workName: 'Mobile Design System Architecture',
-        clientName: 'Museum of Craft',
-        typeTag: 'UI / UX',
-        workBrief: 'Comprehensive component hierarchy for mobile ticketing',
-        status: TaskStatus.inProgress,
-        timeWindow: '09:00 AM - 02:30 PM',
-        timeLogged: '5h 00m logged',
-      ),
-      StudioTask(
-        id: '18',
-        date: 'Oct 18, 2024',
-        designerName: 'Marcus Chen',
-        designerRole: 'Graphic Design',
-        avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
-        workName: 'Typeface Pairing Spec Sheet',
-        clientName: 'Forma Press',
-        typeTag: 'Poster / Print',
-        workBrief: 'Editorial typography combinations across 12 layout templates',
-        status: TaskStatus.completed,
-        timeWindow: '10:00 AM - 01:30 PM',
-        timeLogged: '3h 30m logged',
-      ),
-      StudioTask(
-        id: '19',
-        date: 'Oct 18, 2024',
-        designerName: 'Maya Patel',
-        designerRole: '3D Motion',
-        avatarUrl: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80',
-        workName: 'Holographic UI Animation Mockup',
-        clientName: 'Sona Acoustics',
-        typeTag: 'Video / 3D',
-        workBrief: 'Futuristic audio interface concept animation',
-        status: TaskStatus.pending,
-        timeWindow: 'Pending Start',
-        timeLogged: 'Est: 5h 00m',
-      ),
-      StudioTask(
-        id: '20',
-        date: 'Oct 18, 2024',
-        designerName: 'Liam Vance',
-        designerRole: 'Digital Retouch',
-        avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
-        workName: 'Autumn Catalog Color Grading',
-        clientName: 'Studio NORD',
-        typeTag: 'Editing / Retouch',
-        workBrief: 'Warm palette grading across 30 outdoor campaign stills',
-        status: TaskStatus.completed,
-        timeWindow: '11:00 AM - 05:30 PM',
-        timeLogged: '6h 00m logged',
-      ),
-
-      // --- 10 DAYS AGO (Oct 15, 2024) ---
-      StudioTask(
-        id: '21',
-        date: 'Oct 15, 2024',
-        designerName: 'Elena Rostova',
-        designerRole: 'Lead Visual',
-        avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-        workName: 'App Navigation System Redesign',
-        clientName: 'Veloce Mobility',
-        typeTag: 'UI / UX',
-        workBrief: 'Bottom bar gesture animations and modular drawer prototypes',
-        status: TaskStatus.completed,
-        timeWindow: '09:00 AM - 03:30 PM',
-        timeLogged: '6h 00m logged',
-      ),
-      StudioTask(
-        id: '22',
-        date: 'Oct 15, 2024',
-        designerName: 'Marcus Chen',
-        designerRole: 'Graphic Design',
-        avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
-        workName: 'Outdoor Billboard Graphics',
-        clientName: 'Kyoto Soundfest',
-        typeTag: 'Poster / Print',
-        workBrief: 'High resolution super-wide format vector assets',
-        status: TaskStatus.inProgress,
-        timeWindow: '01:00 PM - 05:00 PM',
-        timeLogged: '4h 00m logged',
-      ),
-      StudioTask(
-        id: '23',
-        date: 'Oct 15, 2024',
-        designerName: 'Maya Patel',
-        designerRole: '3D Motion',
-        avatarUrl: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80',
-        workName: 'Audio Reactive Particle Sim',
-        clientName: 'Sona Acoustics',
-        typeTag: 'Video / 3D',
-        workBrief: 'GPU accelerated particle waveform visualization',
-        status: TaskStatus.inReview,
-        timeWindow: '10:00 AM - 04:00 PM',
-        timeLogged: '5h 30m logged',
-      ),
-      StudioTask(
-        id: '24',
-        date: 'Oct 15, 2024',
-        designerName: 'Liam Vance',
-        designerRole: 'Digital Retouch',
-        avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
-        workName: 'High-Res Product Cleanup Batch',
-        clientName: 'Forma Press',
-        typeTag: 'Editing / Retouch',
-        workBrief: 'Artifact removal and reflections cleanup on hardware renders',
-        status: TaskStatus.pending,
-        timeWindow: 'Pending Start',
-        timeLogged: 'Est: 4h 30m',
-      ),
-
-      // --- 13 DAYS AGO (Oct 12, 2024) ---
-      StudioTask(
-        id: '25',
-        date: 'Oct 12, 2024',
-        designerName: 'Elena Rostova',
-        designerRole: 'Lead Visual',
-        avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-        workName: 'Iconography Suite (48 Icons)',
-        clientName: 'Museum of Craft',
-        typeTag: 'UI / UX',
-        workBrief: 'Custom stroke weight unified svg icon set',
-        status: TaskStatus.completed,
-        timeWindow: '08:30 AM - 04:00 PM',
-        timeLogged: '7h 00m logged',
-      ),
-      StudioTask(
-        id: '26',
-        date: 'Oct 12, 2024',
-        designerName: 'Marcus Chen',
-        designerRole: 'Graphic Design',
-        avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
-        workName: 'Festival Wristband Print Spec',
-        clientName: 'Kyoto Soundfest',
-        typeTag: 'Poster / Print',
-        workBrief: 'Woven fabric barcode pattern & pantone spot separations',
-        status: TaskStatus.completed,
-        timeWindow: '09:00 AM - 12:00 PM',
-        timeLogged: '3h 00m logged',
-      ),
-      StudioTask(
-        id: '27',
-        date: 'Oct 12, 2024',
-        designerName: 'Maya Patel',
-        designerRole: '3D Motion',
-        avatarUrl: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80',
-        workName: '3D Speaker Exploded View Animation',
-        clientName: 'Sona Acoustics',
-        typeTag: 'Video / 3D',
-        workBrief: 'Technical breakdown showing internal acoustic chamber & magnet',
-        status: TaskStatus.completed,
-        timeWindow: '10:00 AM - 04:30 PM',
-        timeLogged: '6h 00m logged',
-      ),
-      StudioTask(
-        id: '28',
-        date: 'Oct 12, 2024',
-        designerName: 'Liam Vance',
-        designerRole: 'Digital Retouch',
-        avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
-        workName: 'Raw Exposure Correction Pass',
-        clientName: 'Studio NORD',
-        typeTag: 'Editing / Retouch',
-        workBrief: 'Batch exposure matching across 60 camera angles',
-        status: TaskStatus.completed,
-        timeWindow: '11:00 AM - 04:30 PM',
-        timeLogged: '5h 00m logged',
-      ),
-    ];
+    _tasks = tasks;
 
     _capacities = [
       DesignerCapacity(name: 'Elena Rostova', currentHours: 34, maxHours: 40),
@@ -924,11 +460,12 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
   void _openEditTaskDialog(StudioTask task) {
     final workNameCtrl = TextEditingController(text: task.workName);
     final clientCtrl = TextEditingController(text: task.clientName);
-    final typeCtrl = TextEditingController(text: task.typeTag);
     final briefCtrl = TextEditingController(text: task.workBrief);
     final timeWindowCtrl = TextEditingController(text: task.timeWindow);
-    final timeLoggedCtrl = TextEditingController(text: task.timeLogged);
+    String selectedDateStr = task.date;
     String selectedDesignerName = task.designerName;
+    String selectedType = task.typeTag;
+    TaskStatus selectedStatus = task.status;
 
     showDialog(
       context: context,
@@ -936,32 +473,41 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return Dialog(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
               backgroundColor: Colors.white,
+              insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
               child: Container(
-                width: 520,
-                padding: const EdgeInsets.all(28),
+                width: 560,
+                padding: const EdgeInsets.all(32),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Eyebrow and Close button
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFEEF2FF),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: const Icon(Icons.edit_note_rounded, size: 20, color: Color(0xFF25206A)),
-                            ),
-                            const SizedBox(width: 12),
                             Text(
-                              'Edit Studio Task',
-                              style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w700, color: const Color(0xFF0F172A)),
+                              'UPDATE PRODUCTION ENTRY',
+                              style: GoogleFonts.jetBrainsMono(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 1.2,
+                                color: const Color(0xFF8E9BAE),
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Edit Work Task',
+                              style: GoogleFonts.inter(
+                                fontSize: 22,
+                                fontWeight: FontWeight.w700,
+                                color: const Color(0xFF0F172A),
+                              ),
                             ),
                           ],
                         ),
@@ -969,127 +515,412 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
                           onPressed: () => Navigator.pop(ctx),
                           icon: const Icon(Icons.close, size: 20, color: Color(0xFF64748B)),
                           splashRadius: 18,
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 16),
-                    TextField(
-                      controller: workNameCtrl,
-                      decoration: InputDecoration(
-                        labelText: 'Work / Project Title',
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: clientCtrl,
-                      decoration: InputDecoration(
-                        labelText: 'Client Name',
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 22),
+
+                    // ROW 1: DATE & ASSIGNED DESIGNER
                     Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        // DATE FIELD
                         Expanded(
-                          child: DropdownButtonFormField<String>(
-                            initialValue: selectedDesignerName,
-                            decoration: InputDecoration(
-                              labelText: 'Assigned Designer',
-                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                            ),
-                            items: const [
-                              DropdownMenuItem(value: 'Elena Rostova', child: Text('Elena Rostova (Lead)')),
-                              DropdownMenuItem(value: 'Marcus Chen', child: Text('Marcus Chen (Graphic)')),
-                              DropdownMenuItem(value: 'Maya Patel', child: Text('Maya Patel (3D)')),
-                              DropdownMenuItem(value: 'Liam Vance', child: Text('Liam Vance (Retouch)')),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'DATE',
+                                style: GoogleFonts.jetBrainsMono(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 0.9,
+                                  color: const Color(0xFF64748B),
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              InkWell(
+                                borderRadius: BorderRadius.circular(6),
+                                onTap: () async {
+                                  final picked = await showDatePicker(
+                                    context: context,
+                                    initialDate: _parseTaskDate(selectedDateStr),
+                                    firstDate: DateTime(2020),
+                                    lastDate: DateTime(2030),
+                                  );
+                                  if (picked != null) {
+                                    setDialogState(() {
+                                      selectedDateStr = _formatDate(picked);
+                                    });
+                                  }
+                                },
+                                child: Container(
+                                  height: 42,
+                                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFF1F4FA),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  alignment: Alignment.centerLeft,
+                                  child: Text(
+                                    selectedDateStr,
+                                    style: GoogleFonts.jetBrainsMono(
+                                      fontSize: 12.5,
+                                      fontWeight: FontWeight.w500,
+                                      color: const Color(0xFF0F172A),
+                                    ),
+                                  ),
+                                ),
+                              ),
                             ],
-                            onChanged: (val) {
-                              if (val != null) setDialogState(() => selectedDesignerName = val);
-                            },
                           ),
                         ),
-                        const SizedBox(width: 12),
+                        const SizedBox(width: 14),
+
+                        // ASSIGNED DESIGNER DROPDOWN
                         Expanded(
-                          child: TextField(
-                            controller: typeCtrl,
-                            decoration: InputDecoration(
-                              labelText: 'Type Tag',
-                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                            ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'ASSIGNED DESIGNER',
+                                style: GoogleFonts.jetBrainsMono(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 0.9,
+                                  color: const Color(0xFF64748B),
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              Container(
+                                height: 42,
+                                padding: const EdgeInsets.symmetric(horizontal: 14),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF1F4FA),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: DropdownButtonHideUnderline(
+                                  child: DropdownButton<String>(
+                                    value: ['Elena Rostova', 'Marcus Chen', 'Maya Patel', 'Liam Vance'].contains(selectedDesignerName)
+                                        ? selectedDesignerName
+                                        : 'Elena Rostova',
+                                    isExpanded: true,
+                                    icon: const Icon(Icons.unfold_more_rounded, size: 18, color: Color(0xFF475569)),
+                                    style: GoogleFonts.inter(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w500,
+                                      color: const Color(0xFF0F172A),
+                                    ),
+                                    items: const [
+                                      DropdownMenuItem(value: 'Elena Rostova', child: Text('Elena Rostova')),
+                                      DropdownMenuItem(value: 'Marcus Chen', child: Text('Marcus Chen')),
+                                      DropdownMenuItem(value: 'Maya Patel', child: Text('Maya Patel')),
+                                      DropdownMenuItem(value: 'Liam Vance', child: Text('Liam Vance')),
+                                    ],
+                                    onChanged: (val) {
+                                      if (val != null) setDialogState(() => selectedDesignerName = val);
+                                    },
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 14),
+
+                    // ROW 2: WORK NAME & TYPE
                     Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        // WORK NAME
                         Expanded(
-                          child: TextField(
-                            controller: timeWindowCtrl,
-                            decoration: InputDecoration(
-                              labelText: 'Time Window',
-                              hintText: '09:30 AM - 01:30 PM',
-                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                            ),
+                          flex: 3,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'WORK NAME',
+                                style: GoogleFonts.jetBrainsMono(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 0.9,
+                                  color: const Color(0xFF64748B),
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              Container(
+                                height: 42,
+                                padding: const EdgeInsets.symmetric(horizontal: 14),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF1F4FA),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                alignment: Alignment.centerLeft,
+                                child: TextField(
+                                  controller: workNameCtrl,
+                                  style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF0F172A)),
+                                  decoration: InputDecoration(
+                                    hintText: 'e.g. Kinetic Typo Teaser',
+                                    hintStyle: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF94A3B8)),
+                                    isDense: true,
+                                    border: InputBorder.none,
+                                    contentPadding: EdgeInsets.zero,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                        const SizedBox(width: 12),
+                        const SizedBox(width: 14),
+
+                        // TYPE DROPDOWN
                         Expanded(
+                          flex: 2,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'TYPE',
+                                style: GoogleFonts.jetBrainsMono(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 0.9,
+                                  color: const Color(0xFF64748B),
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              Container(
+                                height: 42,
+                                padding: const EdgeInsets.symmetric(horizontal: 14),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF1F4FA),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: DropdownButtonHideUnderline(
+                                  child: DropdownButton<String>(
+                                    value: ['Logo', 'UI / UX', 'Poster / Print', 'Video / 3D', 'Editing / Retouch'].contains(selectedType)
+                                        ? selectedType
+                                        : 'UI / UX',
+                                    isExpanded: true,
+                                    icon: const Icon(Icons.unfold_more_rounded, size: 18, color: Color(0xFF475569)),
+                                    style: GoogleFonts.inter(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w500,
+                                      color: const Color(0xFF0F172A),
+                                    ),
+                                    items: const [
+                                      DropdownMenuItem(value: 'Logo', child: Text('Logo')),
+                                      DropdownMenuItem(value: 'UI / UX', child: Text('UI / UX')),
+                                      DropdownMenuItem(value: 'Poster / Print', child: Text('Poster / Print')),
+                                      DropdownMenuItem(value: 'Video / 3D', child: Text('Video / 3D')),
+                                      DropdownMenuItem(value: 'Editing / Retouch', child: Text('Editing / Retouch')),
+                                    ],
+                                    onChanged: (val) {
+                                      if (val != null) setDialogState(() => selectedType = val);
+                                    },
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+
+                    // ROW 3: WORK BRIEF / CLIENT SCOPE
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'WORK BRIEF / CLIENT SCOPE',
+                          style: GoogleFonts.jetBrainsMono(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.9,
+                            color: const Color(0xFF64748B),
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF1F4FA),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
                           child: TextField(
-                            controller: timeLoggedCtrl,
+                            controller: briefCtrl,
+                            maxLines: 3,
+                            style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF0F172A)),
                             decoration: InputDecoration(
-                              labelText: 'Time Logged',
-                              hintText: '4h 00m logged',
-                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                              hintText: 'Provide succinct direction, dimensions, formats, and design constraints...',
+                              hintStyle: GoogleFonts.inter(fontSize: 12.5, color: const Color(0xFF94A3B8)),
+                              isDense: true,
+                              border: InputBorder.none,
+                              contentPadding: EdgeInsets.zero,
                             ),
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: briefCtrl,
-                      maxLines: 2,
-                      decoration: InputDecoration(
-                        labelText: 'Work Brief & Objectives',
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                      ),
+                    const SizedBox(height: 14),
+
+                    // ROW 4: STATUS & LOGGED TIME SLOT
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // STATUS DROPDOWN
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'STATUS',
+                                style: GoogleFonts.jetBrainsMono(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 0.9,
+                                  color: const Color(0xFF64748B),
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              Container(
+                                height: 42,
+                                padding: const EdgeInsets.symmetric(horizontal: 14),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF1F4FA),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: DropdownButtonHideUnderline(
+                                  child: DropdownButton<TaskStatus>(
+                                    value: selectedStatus,
+                                    isExpanded: true,
+                                    icon: const Icon(Icons.unfold_more_rounded, size: 18, color: Color(0xFF475569)),
+                                    style: GoogleFonts.inter(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w500,
+                                      color: const Color(0xFF0F172A),
+                                    ),
+                                    items: const [
+                                      DropdownMenuItem(value: TaskStatus.inProgress, child: Text('In Progress')),
+                                      DropdownMenuItem(value: TaskStatus.inReview, child: Text('In Review')),
+                                      DropdownMenuItem(value: TaskStatus.pending, child: Text('Pending')),
+                                      DropdownMenuItem(value: TaskStatus.completed, child: Text('Completed')),
+                                    ],
+                                    onChanged: (val) {
+                                      if (val != null) setDialogState(() => selectedStatus = val);
+                                    },
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+
+                        // LOGGED TIME SLOT
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'LOGGED TIME SLOT',
+                                style: GoogleFonts.jetBrainsMono(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 0.9,
+                                  color: const Color(0xFF64748B),
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              Container(
+                                height: 42,
+                                padding: const EdgeInsets.symmetric(horizontal: 14),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF1F4FA),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                alignment: Alignment.centerLeft,
+                                child: TextField(
+                                  controller: timeWindowCtrl,
+                                  style: GoogleFonts.jetBrainsMono(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                    color: const Color(0xFF0F172A),
+                                  ),
+                                  decoration: InputDecoration(
+                                    hintText: '09:00 AM - 12:30 PM (3h 30m)',
+                                    hintStyle: GoogleFonts.jetBrainsMono(fontSize: 12, color: const Color(0xFF94A3B8)),
+                                    isDense: true,
+                                    border: InputBorder.none,
+                                    contentPadding: EdgeInsets.zero,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 28),
+
+                    // ACTIONS ROW
                     Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
                         TextButton(
                           onPressed: () => Navigator.pop(ctx),
-                          child: Text('Cancel', style: GoogleFonts.inter(color: const Color(0xFF64748B), fontWeight: FontWeight.w600)),
+                          child: Text(
+                            'Cancel',
+                            style: GoogleFonts.inter(
+                              fontSize: 14,
+                              color: const Color(0xFF475569),
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                         ),
-                        const SizedBox(width: 12),
+                        const SizedBox(width: 16),
                         ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF25206A),
+                            backgroundColor: const Color(0xFF322A86),
                             foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                             elevation: 0,
                           ),
                           onPressed: () {
                             if (workNameCtrl.text.trim().isEmpty) return;
+                            String role = task.designerRole;
+                            String avatar = task.avatarUrl;
+                            if (selectedDesignerName.contains('Marcus')) {
+                              role = 'Graphic Design';
+                              avatar = 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150';
+                            } else if (selectedDesignerName.contains('Maya')) {
+                              role = '3D Motion';
+                              avatar = 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150';
+                            } else if (selectedDesignerName.contains('Liam')) {
+                              role = 'Digital Retouch';
+                              avatar = 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150';
+                            } else if (selectedDesignerName.contains('Elena')) {
+                              role = 'Lead Visual';
+                              avatar = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150';
+                            }
+
                             setState(() {
+                              task.date = selectedDateStr;
                               task.workName = workNameCtrl.text.trim();
-                              task.clientName = clientCtrl.text.trim();
-                              task.typeTag = typeCtrl.text.trim();
-                              task.workBrief = briefCtrl.text.trim();
-                              task.timeWindow = timeWindowCtrl.text.trim();
-                              task.timeLogged = timeLoggedCtrl.text.trim();
+                              task.clientName = clientCtrl.text.trim().isEmpty ? task.clientName : clientCtrl.text.trim();
                               task.designerName = selectedDesignerName;
+                              task.designerRole = role;
+                              task.avatarUrl = avatar;
+                              task.typeTag = selectedType;
+                              task.workBrief = briefCtrl.text.trim().isEmpty ? task.workBrief : briefCtrl.text.trim();
+                              task.status = selectedStatus;
+                              task.timeWindow = timeWindowCtrl.text.trim().isEmpty ? task.timeWindow : timeWindowCtrl.text.trim();
                             });
                             Navigator.pop(ctx);
                             ScaffoldMessenger.of(context).showSnackBar(
@@ -1100,7 +931,13 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
                               ),
                             );
                           },
-                          child: Text('Save Changes', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+                          child: Text(
+                            'Save Changes',
+                            style: GoogleFonts.inter(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                         ),
                       ],
                     ),
@@ -1482,9 +1319,11 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
   void _openAddNewWorkDialog() {
     final workNameCtrl = TextEditingController();
     final clientCtrl = TextEditingController();
-    final typeCtrl = TextEditingController(text: 'UI / UX');
     final briefCtrl = TextEditingController();
+    final timeWindowCtrl = TextEditingController(text: '09:00 AM - 12:30 PM (3h 30m)');
+    String selectedDateStr = _getActiveDateString();
     String selectedDesignerName = 'Elena Rostova';
+    String selectedType = 'Logo';
     TaskStatus selectedStatus = TaskStatus.inProgress;
 
     showDialog(
@@ -1493,101 +1332,398 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return Dialog(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
               backgroundColor: Colors.white,
+              insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
               child: Container(
-                width: 520,
-                padding: const EdgeInsets.all(28),
+                width: 560,
+                padding: const EdgeInsets.all(32),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Eyebrow and Close button
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          'Add New Studio Work',
-                          style: GoogleFonts.inter(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
-                            color: const Color(0xFF0F172A),
-                          ),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'NEW PRODUCTION ENTRY',
+                              style: GoogleFonts.jetBrainsMono(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 1.2,
+                                color: const Color(0xFF8E9BAE),
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Assign Work Task',
+                              style: GoogleFonts.inter(
+                                fontSize: 22,
+                                fontWeight: FontWeight.w700,
+                                color: const Color(0xFF0F172A),
+                              ),
+                            ),
+                          ],
                         ),
                         IconButton(
                           onPressed: () => Navigator.pop(ctx),
                           icon: const Icon(Icons.close, size: 20, color: Color(0xFF64748B)),
                           splashRadius: 18,
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 16),
-                    TextField(
-                      controller: workNameCtrl,
-                      decoration: InputDecoration(
-                        labelText: 'Work / Project Title',
-                        hintText: 'e.g. Brand Identity Overhaul',
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: clientCtrl,
-                      decoration: InputDecoration(
-                        labelText: 'Client Name',
-                        hintText: 'e.g. Veloce Mobility',
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 22),
+
+                    // ROW 1: DATE & ASSIGNED DESIGNER
                     Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        // DATE FIELD
                         Expanded(
-                          child: DropdownButtonFormField<String>(
-                            initialValue: selectedDesignerName,
-                            decoration: InputDecoration(
-                              labelText: 'Assigned Designer',
-                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                            ),
-                            items: const [
-                              DropdownMenuItem(value: 'Elena Rostova', child: Text('Elena Rostova (Lead)')),
-                              DropdownMenuItem(value: 'Marcus Chen', child: Text('Marcus Chen (Graphic)')),
-                              DropdownMenuItem(value: 'Maya Patel', child: Text('Maya Patel (3D)')),
-                              DropdownMenuItem(value: 'Liam Vance', child: Text('Liam Vance (Retouch)')),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'DATE',
+                                style: GoogleFonts.jetBrainsMono(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 0.9,
+                                  color: const Color(0xFF64748B),
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              InkWell(
+                                borderRadius: BorderRadius.circular(6),
+                                onTap: () async {
+                                  final picked = await showDatePicker(
+                                    context: context,
+                                    initialDate: _parseTaskDate(selectedDateStr),
+                                    firstDate: DateTime(2020),
+                                    lastDate: DateTime(2030),
+                                  );
+                                  if (picked != null) {
+                                    setDialogState(() {
+                                      selectedDateStr = _formatDate(picked);
+                                    });
+                                  }
+                                },
+                                child: Container(
+                                  height: 42,
+                                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFF1F4FA),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  alignment: Alignment.centerLeft,
+                                  child: Text(
+                                    selectedDateStr,
+                                    style: GoogleFonts.jetBrainsMono(
+                                      fontSize: 12.5,
+                                      fontWeight: FontWeight.w500,
+                                      color: const Color(0xFF0F172A),
+                                    ),
+                                  ),
+                                ),
+                              ),
                             ],
-                            onChanged: (val) {
-                              if (val != null) setDialogState(() => selectedDesignerName = val);
-                            },
                           ),
                         ),
-                        const SizedBox(width: 12),
+                        const SizedBox(width: 14),
+
+                        // ASSIGNED DESIGNER DROPDOWN
                         Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'ASSIGNED DESIGNER',
+                                style: GoogleFonts.jetBrainsMono(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 0.9,
+                                  color: const Color(0xFF64748B),
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              Container(
+                                height: 42,
+                                padding: const EdgeInsets.symmetric(horizontal: 14),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF1F4FA),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: DropdownButtonHideUnderline(
+                                  child: DropdownButton<String>(
+                                    value: selectedDesignerName,
+                                    isExpanded: true,
+                                    icon: const Icon(Icons.unfold_more_rounded, size: 18, color: Color(0xFF475569)),
+                                    style: GoogleFonts.inter(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w500,
+                                      color: const Color(0xFF0F172A),
+                                    ),
+                                    items: const [
+                                      DropdownMenuItem(value: 'Elena Rostova', child: Text('Elena Rostova')),
+                                      DropdownMenuItem(value: 'Marcus Chen', child: Text('Marcus Chen')),
+                                      DropdownMenuItem(value: 'Maya Patel', child: Text('Maya Patel')),
+                                      DropdownMenuItem(value: 'Liam Vance', child: Text('Liam Vance')),
+                                    ],
+                                    onChanged: (val) {
+                                      if (val != null) setDialogState(() => selectedDesignerName = val);
+                                    },
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+
+                    // ROW 2: WORK NAME & TYPE
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // WORK NAME
+                        Expanded(
+                          flex: 3,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'WORK NAME',
+                                style: GoogleFonts.jetBrainsMono(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 0.9,
+                                  color: const Color(0xFF64748B),
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              Container(
+                                height: 42,
+                                padding: const EdgeInsets.symmetric(horizontal: 14),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF1F4FA),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                alignment: Alignment.centerLeft,
+                                child: TextField(
+                                  controller: workNameCtrl,
+                                  style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF0F172A)),
+                                  decoration: InputDecoration(
+                                    hintText: 'e.g. Kinetic Typo Teaser',
+                                    hintStyle: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF94A3B8)),
+                                    isDense: true,
+                                    border: InputBorder.none,
+                                    contentPadding: EdgeInsets.zero,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+
+                        // TYPE DROPDOWN
+                        Expanded(
+                          flex: 2,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'TYPE',
+                                style: GoogleFonts.jetBrainsMono(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 0.9,
+                                  color: const Color(0xFF64748B),
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              Container(
+                                height: 42,
+                                padding: const EdgeInsets.symmetric(horizontal: 14),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF1F4FA),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: DropdownButtonHideUnderline(
+                                  child: DropdownButton<String>(
+                                    value: selectedType,
+                                    isExpanded: true,
+                                    icon: const Icon(Icons.unfold_more_rounded, size: 18, color: Color(0xFF475569)),
+                                    style: GoogleFonts.inter(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w500,
+                                      color: const Color(0xFF0F172A),
+                                    ),
+                                    items: const [
+                                      DropdownMenuItem(value: 'Logo', child: Text('Logo')),
+                                      DropdownMenuItem(value: 'UI / UX', child: Text('UI / UX')),
+                                      DropdownMenuItem(value: 'Poster / Print', child: Text('Poster / Print')),
+                                      DropdownMenuItem(value: 'Video / 3D', child: Text('Video / 3D')),
+                                      DropdownMenuItem(value: 'Editing / Retouch', child: Text('Editing / Retouch')),
+                                    ],
+                                    onChanged: (val) {
+                                      if (val != null) setDialogState(() => selectedType = val);
+                                    },
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+
+                    // ROW 3: WORK BRIEF / CLIENT SCOPE
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'WORK BRIEF / CLIENT SCOPE',
+                          style: GoogleFonts.jetBrainsMono(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.9,
+                            color: const Color(0xFF64748B),
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF1F4FA),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
                           child: TextField(
-                            controller: typeCtrl,
+                            controller: briefCtrl,
+                            maxLines: 3,
+                            style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF0F172A)),
                             decoration: InputDecoration(
-                              labelText: 'Type Tag',
-                              hintText: 'e.g. Video / 3D',
-                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                              hintText: 'Provide succinct direction, dimensions, formats, and design constraints...',
+                              hintStyle: GoogleFonts.inter(fontSize: 12.5, color: const Color(0xFF94A3B8)),
+                              isDense: true,
+                              border: InputBorder.none,
+                              contentPadding: EdgeInsets.zero,
                             ),
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: briefCtrl,
-                      maxLines: 2,
-                      decoration: InputDecoration(
-                        labelText: 'Work Brief & Objectives',
-                        hintText: 'Describe short deliverables & scope...',
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                      ),
+                    const SizedBox(height: 14),
+
+                    // ROW 4: STATUS & LOGGED TIME SLOT
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // STATUS DROPDOWN
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'STATUS',
+                                style: GoogleFonts.jetBrainsMono(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 0.9,
+                                  color: const Color(0xFF64748B),
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              Container(
+                                height: 42,
+                                padding: const EdgeInsets.symmetric(horizontal: 14),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF1F4FA),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: DropdownButtonHideUnderline(
+                                  child: DropdownButton<TaskStatus>(
+                                    value: selectedStatus,
+                                    isExpanded: true,
+                                    icon: const Icon(Icons.unfold_more_rounded, size: 18, color: Color(0xFF475569)),
+                                    style: GoogleFonts.inter(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w500,
+                                      color: const Color(0xFF0F172A),
+                                    ),
+                                    items: const [
+                                      DropdownMenuItem(value: TaskStatus.inProgress, child: Text('In Progress')),
+                                      DropdownMenuItem(value: TaskStatus.inReview, child: Text('In Review')),
+                                      DropdownMenuItem(value: TaskStatus.pending, child: Text('Pending')),
+                                      DropdownMenuItem(value: TaskStatus.completed, child: Text('Completed')),
+                                    ],
+                                    onChanged: (val) {
+                                      if (val != null) setDialogState(() => selectedStatus = val);
+                                    },
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+
+                        // LOGGED TIME SLOT
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'LOGGED TIME SLOT',
+                                style: GoogleFonts.jetBrainsMono(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 0.9,
+                                  color: const Color(0xFF64748B),
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              Container(
+                                height: 42,
+                                padding: const EdgeInsets.symmetric(horizontal: 14),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF1F4FA),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                alignment: Alignment.centerLeft,
+                                child: TextField(
+                                  controller: timeWindowCtrl,
+                                  style: GoogleFonts.jetBrainsMono(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                    color: const Color(0xFF0F172A),
+                                  ),
+                                  decoration: InputDecoration(
+                                    hintText: '09:00 AM - 12:30 PM (3h 30m)',
+                                    hintStyle: GoogleFonts.jetBrainsMono(fontSize: 12, color: const Color(0xFF94A3B8)),
+                                    isDense: true,
+                                    border: InputBorder.none,
+                                    contentPadding: EdgeInsets.zero,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 28),
+
+                    // ACTIONS ROW
                     Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
@@ -1595,21 +1731,25 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
                           onPressed: () => Navigator.pop(ctx),
                           child: Text(
                             'Cancel',
-                            style: GoogleFonts.inter(color: const Color(0xFF64748B), fontWeight: FontWeight.w600),
+                            style: GoogleFonts.inter(
+                              fontSize: 14,
+                              color: const Color(0xFF475569),
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ),
-                        const SizedBox(width: 12),
+                        const SizedBox(width: 16),
                         ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF25206A),
+                            backgroundColor: const Color(0xFF322A86),
                             foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                             elevation: 0,
                           ),
                           onPressed: () {
                             if (workNameCtrl.text.trim().isEmpty) return;
-                            String role = 'Designer';
+                            String role = 'Lead Visual';
                             String avatar = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150';
                             if (selectedDesignerName.contains('Marcus')) {
                               role = 'Graphic Design';
@@ -1627,16 +1767,16 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
                                 0,
                                 StudioTask(
                                   id: DateTime.now().millisecondsSinceEpoch.toString(),
-                                  date: _getActiveDateString(),
+                                  date: selectedDateStr,
                                   designerName: selectedDesignerName,
                                   designerRole: role,
                                   avatarUrl: avatar,
                                   workName: workNameCtrl.text.trim(),
                                   clientName: clientCtrl.text.trim().isEmpty ? 'Direct Studio' : clientCtrl.text.trim(),
-                                  typeTag: typeCtrl.text.trim().isEmpty ? 'General' : typeCtrl.text.trim(),
+                                  typeTag: selectedType,
                                   workBrief: briefCtrl.text.trim().isEmpty ? 'Initial milestone started' : briefCtrl.text.trim(),
                                   status: selectedStatus,
-                                  timeWindow: '02:00 PM - 06:00 PM',
+                                  timeWindow: timeWindowCtrl.text.trim().isEmpty ? '09:00 AM - 12:30 PM' : timeWindowCtrl.text.trim(),
                                   timeLogged: '0h 00m logged',
                                 ),
                               );
@@ -1644,8 +1784,11 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
                             Navigator.pop(ctx);
                           },
                           child: Text(
-                            '+ Create Assignment',
-                            style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+                            'Create Entry',
+                            style: GoogleFonts.inter(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ),
                       ],
@@ -1756,6 +1899,10 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
           _buildNavTab('Hours Report', isActive: false, onTap: () {
             widget.onNavigateToHoursReport?.call();
           }),
+          const SizedBox(width: 8),
+          _buildNavTab('Login', isActive: false, onTap: () {
+            widget.onNavigateToLogin?.call();
+          }),
           const Spacer(),
           Container(
             width: 240,
@@ -1830,19 +1977,25 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
             ),
           ),
           const SizedBox(width: 16),
-          ClipRRect(
+          InkWell(
             borderRadius: BorderRadius.circular(18),
-            child: Image.network(
-              'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80',
-              width: 32,
-              height: 32,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) => Container(
+            onTap: () {
+              widget.onNavigateToLogin?.call();
+            },
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(18),
+              child: Image.network(
+                'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80',
                 width: 32,
                 height: 32,
-                color: const Color(0xFF3B82F6),
-                child: const Center(
-                  child: Text('ER', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) => Container(
+                  width: 32,
+                  height: 32,
+                  color: const Color(0xFF3B82F6),
+                  child: const Center(
+                    child: Text('ER', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+                  ),
                 ),
               ),
             ),
@@ -2179,12 +2332,12 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
         border: Border.all(color: const Color(0xFFEAEFF5)),
       ),
       child: Wrap(
-        spacing: 12,
+        spacing: 16,
         runSpacing: 10,
         crossAxisAlignment: WrapCrossAlignment.center,
         alignment: WrapAlignment.spaceBetween,
         children: [
-          // Timeframe Selector
+          // 1. Timeframe / Day Selector
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -2192,9 +2345,9 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
                 'DAY:',
                 style: GoogleFonts.jetBrainsMono(
                   fontSize: 10.5,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 0.8,
-                  color: const Color(0xFF8E9BAE),
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1.0,
+                  color: const Color(0xFF64748B),
                 ),
               ),
               const SizedBox(width: 8),
@@ -2218,7 +2371,11 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
             ],
           ),
 
-          // Designer Selector
+          // Divider 1
+          if (!isNarrow)
+            Container(height: 18, width: 1, color: const Color(0xFFE2E8F0)),
+
+          // 2. Designer / Staff Selector
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -2226,9 +2383,9 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
                 'DESIGNER:',
                 style: GoogleFonts.jetBrainsMono(
                   fontSize: 10.5,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 0.8,
-                  color: const Color(0xFF8E9BAE),
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1.0,
+                  color: const Color(0xFF64748B),
                 ),
               ),
               const SizedBox(width: 8),
@@ -2254,7 +2411,11 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
             ],
           ),
 
-          // Status Selector
+          // Divider 2
+          if (!isNarrow)
+            Container(height: 18, width: 1, color: const Color(0xFFE2E8F0)),
+
+          // 3. Status Selector
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -2262,9 +2423,9 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
                 'STATUS:',
                 style: GoogleFonts.jetBrainsMono(
                   fontSize: 10.5,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 0.8,
-                  color: const Color(0xFF8E9BAE),
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1.0,
+                  color: const Color(0xFF64748B),
                 ),
               ),
               const SizedBox(width: 8),
@@ -2305,9 +2466,13 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
             ],
           ),
 
-          // Search Field
+          // Divider 3
+          if (!isNarrow)
+            Container(height: 18, width: 1, color: const Color(0xFFE2E8F0)),
+
+          // 4. Search Field
           Container(
-            width: 200,
+            width: 210,
             height: 32,
             decoration: BoxDecoration(
               color: const Color(0xFFF4F6FB),
@@ -2339,6 +2504,14 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
                     ),
                   ),
                 ),
+                if (_searchQuery.isNotEmpty)
+                  InkWell(
+                    onTap: () {
+                      _tableSearchController.clear();
+                      setState(() => _searchQuery = '');
+                    },
+                    child: const Icon(Icons.close, size: 13, color: Color(0xFF94A3B8)),
+                  ),
               ],
             ),
           ),
@@ -2675,15 +2848,15 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 2),
-                Text(
-                  task.clientName,
-                  style: GoogleFonts.inter(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w500,
-                    color: const Color(0xFF2563EB),
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
+                // Text(
+                //   task.clientName,
+                //   style: GoogleFonts.inter(
+                //     fontSize: 11,
+                //     fontWeight: FontWeight.w500,
+                //     color: const Color(0xFF2563EB),
+                //   ),
+                //   overflow: TextOverflow.ellipsis,
+                // ),
               ],
             ),
           ),

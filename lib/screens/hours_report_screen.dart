@@ -77,10 +77,12 @@ class HoursLogEntry {
 
 class HoursReportScreen extends StatefulWidget {
   final VoidCallback onNavigateToWorkboard;
+  final VoidCallback? onNavigateToLogin;
 
   const HoursReportScreen({
     super.key,
     required this.onNavigateToWorkboard,
+    this.onNavigateToLogin,
   });
 
   @override
@@ -382,6 +384,10 @@ class _HoursReportScreenState extends State<HoursReportScreen> {
           _buildNavTab('Workboard', isActive: false, onTap: widget.onNavigateToWorkboard),
           const SizedBox(width: 8),
           _buildNavTab('Hours Report', isActive: true, onTap: () {}),
+          const SizedBox(width: 8),
+          _buildNavTab('Login', isActive: false, onTap: () {
+            widget.onNavigateToLogin?.call();
+          }),
           const Spacer(),
           Container(
             width: 240,
@@ -451,19 +457,25 @@ class _HoursReportScreenState extends State<HoursReportScreen> {
             ),
           ),
           const SizedBox(width: 16),
-          ClipRRect(
+          InkWell(
             borderRadius: BorderRadius.circular(18),
-            child: Image.network(
-              'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80',
-              width: 32,
-              height: 32,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) => Container(
+            onTap: () {
+              widget.onNavigateToLogin?.call();
+            },
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(18),
+              child: Image.network(
+                'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80',
                 width: 32,
                 height: 32,
-                color: const Color(0xFF3B82F6),
-                child: const Center(
-                  child: Text('ER', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) => Container(
+                  width: 32,
+                  height: 32,
+                  color: const Color(0xFF3B82F6),
+                  child: const Center(
+                    child: Text('ER', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+                  ),
                 ),
               ),
             ),
