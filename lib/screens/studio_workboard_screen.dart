@@ -3812,8 +3812,8 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
                       const SizedBox(height: 28),
                       _buildBottomAnalyticsRow(isNarrow: isNarrow),
                       const SizedBox(height: 48),
-                      _buildFooter(isNarrow: isNarrow),
-                      const SizedBox(height: 24),
+                      // _buildFooter(isNarrow: isNarrow),
+                      // const SizedBox(height: 24),
                     ],
                   ),
                 );
@@ -5576,48 +5576,5 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
   }
 
   // --- FOOTER ---
-  Widget _buildFooter({required bool isNarrow}) {
-    if (isNarrow) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'StudioTrack • Atelier Core v1.4',
-            style: GoogleFonts.jetBrainsMono(
-              fontSize: 11,
-              color: const Color(0xFF94A3B8),
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'Architectural Precision • Minimalist Workflow',
-            style: GoogleFonts.jetBrainsMono(
-              fontSize: 11,
-              color: const Color(0xFF94A3B8),
-            ),
-          ),
-        ],
-      );
-    }
-
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          'StudioTrack • Atelier Core v1.4',
-          style: GoogleFonts.jetBrainsMono(
-            fontSize: 11,
-            color: const Color(0xFF94A3B8),
-          ),
-        ),
-        Text(
-          'Architectural Precision • Minimalist Workflow',
-          style: GoogleFonts.jetBrainsMono(
-            fontSize: 11,
-            color: const Color(0xFF94A3B8),
-          ),
-        ),
-      ],
-    );
-  }
+  
 }
