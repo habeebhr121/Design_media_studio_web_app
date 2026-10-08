@@ -417,30 +417,40 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
   }
 
   List<DailyCadence> get _cadenceData {
-    double calculateHoursForDates(List<String> matchingDates) {
-      double total = 0.0;
+    DateTime refDate = DateTime(2024, 10, 24);
+    if (_tasks.isNotEmpty) {
       for (final t in _tasks) {
-        if (matchingDates.contains(t.date)) {
-          total += _parseLoggedHours(t.timeLogged, t.timeWindow);
+        final d = _parseTaskDate(t.date);
+        if (d.isAfter(refDate)) {
+          refDate = d;
         }
       }
-      return total;
     }
 
-    final monHours = calculateHoursForDates(['Oct 21, 2024', 'Oct 20, 2024', 'Oct 18, 2024']);
-    final tueHours = calculateHoursForDates(['Oct 22, 2024']);
-    final wedHours = calculateHoursForDates(['Oct 23, 2024']);
-    final thuHours = calculateHoursForDates(['Oct 24, 2024']);
-    final friTasks = _tasks.where((t) => t.date == 'Oct 25, 2024').toList();
-    final friHours = friTasks.isNotEmpty ? calculateHoursForDates(['Oct 25, 2024']) : null;
+    final daysOfWeek = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    final List<DateTime> dates = List.generate(5, (i) => refDate.subtract(Duration(days: 4 - i)));
 
-    return [
-      DailyCadence(day: 'Mon', hours: monHours > 0 ? monHours : 31),
-      DailyCadence(day: 'Tue', hours: tueHours > 0 ? tueHours : 28),
-      DailyCadence(day: 'Wed', hours: wedHours > 0 ? wedHours : 35),
-      DailyCadence(day: 'Thu', hours: thuHours > 0 ? (thuHours < 20 ? 16 + thuHours : thuHours) : 32, isHighlighted: true),
-      DailyCadence(day: 'Fri', hours: friHours),
-    ];
+    return dates.map((date) {
+      final dateStr = _formatDate(date);
+      final dayName = daysOfWeek[date.weekday - 1];
+      final isRefDate = date.year == refDate.year && date.month == refDate.month && date.day == refDate.day;
+
+      double dayHours = 0.0;
+      int taskCount = 0;
+      for (final t in _tasks) {
+        final tDate = _parseTaskDate(t.date);
+        if (t.date == dateStr || (tDate.year == date.year && tDate.month == date.month && tDate.day == date.day)) {
+          dayHours += _parseLoggedHours(t.timeLogged, t.timeWindow);
+          taskCount++;
+        }
+      }
+
+      return DailyCadence(
+        day: dayName,
+        hours: taskCount > 0 ? dayHours : null,
+        isHighlighted: isRefDate,
+      );
+    }).toList();
   }
 
   List<StudioTask> get _filteredTasks {
@@ -3802,8 +3812,8 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
                       const SizedBox(height: 28),
                       _buildBottomAnalyticsRow(isNarrow: isNarrow),
                       const SizedBox(height: 48),
-                      // _buildFooter(isNarrow: isNarrow),
-                      // const SizedBox(height: 24),
+                      _buildFooter(isNarrow: isNarrow),
+                      const SizedBox(height: 24),
                     ],
                   ),
                 );
@@ -5317,8 +5327,16 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
               crossAxisAlignment: CrossAxisAlignment.end,
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: cadenceData.map((item) {
-                const double maxVal = 40.0;
-                final double heightFactor = ((item.hours ?? 0) / maxVal).clamp(0.0, 1.0);
+                final double maxVal = cadenceData
+                    .map((e) => e.hours ?? 0.0)
+                    .fold<double>(0.0, (prev, curr) => curr > prev ? curr : prev);
+                final double effectiveMax = maxVal > 0 ? maxVal : 10.0;
+                final double heightFactor = ((item.hours ?? 0) / effectiveMax).clamp(0.08, 1.0);
+                final formatted = item.hours != null
+                    ? (item.hours!.truncateToDouble() == item.hours!
+                        ? '${item.hours!.toInt()}h'
+                        : '${item.hours!.toStringAsFixed(1)}h')
+                    : '--';
 
                 return Expanded(
                   child: Padding(
@@ -5326,23 +5344,14 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
-                        if (item.hours != null)
-                          Text(
-                            '${item.hours!.toInt()}h',
-                            style: GoogleFonts.jetBrainsMono(
-                              fontSize: 10.5,
-                              fontWeight: item.isHighlighted ? FontWeight.w700 : FontWeight.w500,
-                              color: item.isHighlighted ? const Color(0xFF25206A) : const Color(0xFF64748B),
-                            ),
-                          )
-                        else
-                          Text(
-                            '--',
-                            style: GoogleFonts.jetBrainsMono(
-                              fontSize: 10.5,
-                              color: const Color(0xFFCBD5E1),
-                            ),
+                        Text(
+                          formatted,
+                          style: GoogleFonts.jetBrainsMono(
+                            fontSize: 10.5,
+                            fontWeight: item.isHighlighted ? FontWeight.w700 : FontWeight.w500,
+                            color: item.isHighlighted ? const Color(0xFF25206A) : (item.hours != null ? const Color(0xFF64748B) : const Color(0xFFCBD5E1)),
                           ),
+                        ),
                         const SizedBox(height: 6),
                         Container(
                           height: item.hours != null ? (heightFactor * 85) : 4,

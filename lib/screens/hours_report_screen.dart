@@ -228,7 +228,8 @@ class _HoursReportScreenState extends State<HoursReportScreen> {
   List<DesignerReport> get _designerReports {
     return designers.map((designer) {
       final designerTasks = _tasks.where((t) {
-        return t.designerName.toLowerCase().contains(designer.name.toLowerCase()) ||
+        return t.designerName.trim().toLowerCase() == designer.name.trim().toLowerCase() ||
+            t.designerName.toLowerCase().contains(designer.name.toLowerCase()) ||
             designer.name.toLowerCase().contains(t.designerName.toLowerCase());
       }).toList();
 
@@ -238,18 +239,11 @@ class _HoursReportScreenState extends State<HoursReportScreen> {
         logged += _parseLoggedHours(t.timeLogged, t.timeWindow);
       }
 
-      // If timeframe tasks logged is very low, supplement with designer lifetime/sample hours
-      if (logged == 0) {
-        for (final t in designerTasks) {
-          logged += _parseLoggedHours(t.timeLogged, t.timeWindow);
-        }
-      }
-
-      final completedCount = designerTasks.where((t) => t.status == TaskStatus.completed).length;
-      final activeCount = designerTasks.where((t) => t.status == TaskStatus.inProgress || t.status == TaskStatus.pending).length;
+      final completedCount = timeframeTasks.where((t) => t.status == TaskStatus.completed).length;
+      final activeCount = timeframeTasks.where((t) => t.status == TaskStatus.inProgress || t.status == TaskStatus.pending).length;
       const quota = 40.0;
-      final progress = logged / quota;
-      final statusBadge = completedCount > 2 ? 'High Output' : (activeCount > 0 ? 'Active' : 'Optimal');
+      final progress = quota > 0 ? (logged / quota).clamp(0.0, 1.0) : 0.0;
+      final statusBadge = completedCount > 0 ? 'High Output' : (activeCount > 0 ? 'Active' : 'Idle');
 
       return DesignerReport(
         name: designer.name,
@@ -257,8 +251,8 @@ class _HoursReportScreenState extends State<HoursReportScreen> {
         avatarUrl: designer.imagePath,
         statusBadge: statusBadge,
         loggedHours: logged,
-        completedTasks: completedCount > 0 ? completedCount : 3,
-        activeTasks: activeCount > 0 ? activeCount : 2,
+        completedTasks: completedCount,
+        activeTasks: activeCount,
         quotaHours: quota,
         progressPercent: progress,
       );
@@ -270,15 +264,7 @@ class _HoursReportScreenState extends State<HoursReportScreen> {
     for (final t in _filteredTasks) {
       final tag = t.typeTag.isNotEmpty ? t.typeTag : 'General Design';
       final h = _parseLoggedHours(t.timeLogged, t.timeWindow);
-      typeHours[tag] = (typeHours[tag] ?? 0.0) + (h > 0 ? h : 3.5);
-    }
-
-    if (typeHours.isEmpty) {
-      typeHours['Logo / System'] = 44.0;
-      typeHours['Poster / Print'] = 35.5;
-      typeHours['Video / 3D'] = 32.0;
-      typeHours['Editing / Retouch'] = 21.5;
-      typeHours['UI / UX'] = 15.0;
+      typeHours[tag] = (typeHours[tag] ?? 0.0) + (h > 0 ? h : 0.0);
     }
 
     final totalHours = typeHours.values.fold<double>(0.0, (sum, v) => sum + v);
@@ -292,9 +278,20 @@ class _HoursReportScreenState extends State<HoursReportScreen> {
       const Color(0xFF64748B),
     ];
 
+    if (typeHours.isEmpty) {
+      return [
+        WorkTypeDistribution(
+          title: 'No logged activity',
+          hours: 0.0,
+          percentage: 0,
+          barColor: const Color(0xFFCBD5E1),
+        ),
+      ];
+    }
+
     int colorIndex = 0;
     return typeHours.entries.map((entry) {
-      final pct = totalHours > 0 ? ((entry.value / totalHours) * 100).round() : 20;
+      final pct = totalHours > 0 ? ((entry.value / totalHours) * 100).round() : 0;
       final color = colors[colorIndex % colors.length];
       colorIndex++;
       return WorkTypeDistribution(
@@ -373,8 +370,8 @@ class _HoursReportScreenState extends State<HoursReportScreen> {
                         ),
                       ),
                       const SizedBox(height: 48),
-                      // _buildFooter(isNarrow: isNarrow),
-                      // const SizedBox(height: 24),
+                      _buildFooter(isNarrow: isNarrow),
+                      const SizedBox(height: 24),
                     ],
                   ),
                 );
@@ -645,26 +642,27 @@ class _HoursReportScreenState extends State<HoursReportScreen> {
     for (final t in currentTasks) {
       totalLogged += _parseLoggedHours(t.timeLogged, t.timeWindow);
     }
-    if (totalLogged == 0) {
-      totalLogged = 148.0;
-    }
 
     final completedCount = currentTasks.where((t) => t.status == TaskStatus.completed).length;
     final activeReviewCount = currentTasks.where((t) => t.status == TaskStatus.inProgress || t.status == TaskStatus.pending).length;
-    final avgDaily = totalLogged / (designers.isNotEmpty ? designers.length * 5 : 20);
+    final activeStaff = currentTasks.map((t) => t.designerName).toSet().length;
+    final designerCount = activeStaff > 0 ? activeStaff : (designers.isNotEmpty ? designers.length : 1);
+    final avgDaily = totalLogged / designerCount;
+
+    final formattedHours = totalLogged.toStringAsFixed(totalLogged.truncateToDouble() == totalLogged ? 0 : 1);
 
     final c1 = _buildMetricCard(
       title: 'TOTAL LOGGED',
       icon: Icons.access_time_rounded,
       iconColor: const Color(0xFF2563EB),
-      mainNumber: totalLogged.toInt().toString(),
+      mainNumber: formattedHours,
       unit: 'hrs',
       customBottom: Row(
         children: [
-          const Icon(Icons.arrow_upward_rounded, size: 13, color: Color(0xFF2563EB)),
+          Icon(totalLogged > 0 ? Icons.arrow_upward_rounded : Icons.schedule_rounded, size: 13, color: const Color(0xFF2563EB)),
           const SizedBox(width: 4),
           Text(
-            '+6.2% vs last cycle',
+            '${currentTasks.length} sessions in timeframe',
             style: GoogleFonts.jetBrainsMono(
               fontSize: 10.5,
               fontWeight: FontWeight.w600,
@@ -679,7 +677,7 @@ class _HoursReportScreenState extends State<HoursReportScreen> {
       title: 'COMPLETED DELIVERABLES',
       icon: Icons.task_alt_rounded,
       iconColor: const Color(0xFF10B981),
-      mainNumber: completedCount > 0 ? completedCount.toString() : '16',
+      mainNumber: '$completedCount',
       unit: 'done',
       customBottom: Row(
         children: [
@@ -707,8 +705,8 @@ class _HoursReportScreenState extends State<HoursReportScreen> {
       title: 'ACTIVE DELIVERABLES',
       icon: Icons.inventory_2_outlined,
       iconColor: const Color(0xFFB45309),
-      mainNumber: completedCount > 0 ? completedCount.toString() : '16',
-      unit: 'completed',
+      mainNumber: '$activeReviewCount',
+      unit: 'active',
       customBottom: Row(
         children: [
           Container(
@@ -721,7 +719,7 @@ class _HoursReportScreenState extends State<HoursReportScreen> {
           ),
           const SizedBox(width: 6),
           Text(
-            '$activeReviewCount queued / active',
+            '$activeReviewCount queued / in progress',
             style: GoogleFonts.jetBrainsMono(
               fontSize: 10.5,
               color: const Color(0xFF64748B),
@@ -736,9 +734,9 @@ class _HoursReportScreenState extends State<HoursReportScreen> {
       icon: Icons.group_outlined,
       iconColor: const Color(0xFF475569),
       mainNumber: avgDaily.toStringAsFixed(1),
-      unit: 'hrs/day',
+      unit: 'hrs/designer',
       customBottom: Text(
-        'Nominal base: 8.0 hrs',
+        'Across $designerCount active designers',
         style: GoogleFonts.jetBrainsMono(
           fontSize: 10.5,
           color: const Color(0xFF64748B),
@@ -1348,7 +1346,7 @@ class _HoursReportScreenState extends State<HoursReportScreen> {
                   ],
                 ),
                 Text(
-                  '94.8 / 100',
+                  '${_filteredTasks.isNotEmpty ? (((_filteredTasks.where((t) => t.status == TaskStatus.completed).length + _filteredTasks.where((t) => t.status == TaskStatus.inProgress).length * 0.5) / _filteredTasks.length) * 100).clamp(0.0, 100.0).toStringAsFixed(1) : "100.0"} / 100',
                   style: GoogleFonts.jetBrainsMono(
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
@@ -1730,47 +1728,32 @@ class _HoursReportScreenState extends State<HoursReportScreen> {
 
   // --- FOOTER ---
   Widget _buildFooter({required bool isNarrow}) {
-    if (isNarrow) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Text(
-            'StudioTrack • Atelier Core v1.4',
+            'Design Media Studio • Atelier Core v1.4',
+            textAlign: TextAlign.center,
             style: GoogleFonts.jetBrainsMono(
               fontSize: 11,
-              color: const Color(0xFF94A3B8),
+              fontWeight: FontWeight.w600,
+              color: const Color(0xFF64748B),
             ),
           ),
           const SizedBox(height: 4),
           Text(
-            'Architectural Precision • Minimalist Workflow',
+            'Organized & Built by Habeeb Rahman (habeebhr121@gmail.com)',
+            textAlign: TextAlign.center,
             style: GoogleFonts.jetBrainsMono(
-              fontSize: 11,
+              fontSize: 10.5,
+              fontWeight: FontWeight.w500,
               color: const Color(0xFF94A3B8),
             ),
           ),
         ],
-      );
-    }
-
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          'StudioTrack • Atelier Core v1.4',
-          style: GoogleFonts.jetBrainsMono(
-            fontSize: 11,
-            color: const Color(0xFF94A3B8),
-          ),
-        ),
-        Text(
-          'Architectural Precision • Minimalist Workflow',
-          style: GoogleFonts.jetBrainsMono(
-            fontSize: 11,
-            color: const Color(0xFF94A3B8),
-          ),
-        ),
-      ],
+      ),
     );
   }
   }
