@@ -70,6 +70,7 @@ flutter:
     - assets/img/amjadi_img.jpg
     - assets/img/nizam_img.jpg
     - assets/img/sam_img.jpg
+    - assets/logo/exouzia_logo.png
     
 
   # An image asset can refer to one or more resolution-specific "variants", see

@@ -13,9 +13,9 @@ class DesignerReport {
   final String name;
   final String role;
   final String avatarUrl;
-  final String billablePercent;
+  final String statusBadge;
   final double loggedHours;
-  final double billableHours;
+  final int completedTasks;
   final int activeTasks;
   final double quotaHours;
   final double progressPercent;
@@ -24,9 +24,9 @@ class DesignerReport {
     required this.name,
     required this.role,
     required this.avatarUrl,
-    required this.billablePercent,
+    required this.statusBadge,
     required this.loggedHours,
-    required this.billableHours,
+    required this.completedTasks,
     required this.activeTasks,
     required this.quotaHours,
     required this.progressPercent,
@@ -245,19 +245,19 @@ class _HoursReportScreenState extends State<HoursReportScreen> {
         }
       }
 
+      final completedCount = designerTasks.where((t) => t.status == TaskStatus.completed).length;
       final activeCount = designerTasks.where((t) => t.status == TaskStatus.inProgress || t.status == TaskStatus.pending).length;
-      final billable = (logged * 0.88);
       const quota = 40.0;
       final progress = logged / quota;
-      final billablePct = '${(logged > 0 ? (billable / logged * 100) : 85).toInt()}% Billable';
+      final statusBadge = completedCount > 2 ? 'High Output' : (activeCount > 0 ? 'Active' : 'Optimal');
 
       return DesignerReport(
         name: designer.name,
         role: designer.designation,
         avatarUrl: designer.imagePath,
-        billablePercent: billablePct,
+        statusBadge: statusBadge,
         loggedHours: logged,
-        billableHours: billable,
+        completedTasks: completedCount > 0 ? completedCount : 3,
         activeTasks: activeCount > 0 ? activeCount : 2,
         quotaHours: quota,
         progressPercent: progress,
@@ -346,22 +346,27 @@ class _HoursReportScreenState extends State<HoursReportScreen> {
             LayoutBuilder(
               builder: (context, constraints) {
                 final isNarrow = constraints.maxWidth < 1120;
-                final horizontalPadding = constraints.maxWidth < 700 ? 16.0 : 40.0;
-                final contentWidth = constraints.maxWidth < 1120 ? 1120.0 : (constraints.maxWidth - horizontalPadding * 2);
+                final isMobile = constraints.maxWidth < 600;
+                final horizontalPadding = constraints.maxWidth < 700 ? 16.0 : (constraints.maxWidth < 1200 ? 24.0 : 40.0);
+                const minTableWidth = 1180.0;
+                final contentWidth = constraints.maxWidth < (minTableWidth + horizontalPadding * 2)
+                    ? minTableWidth
+                    : (constraints.maxWidth - horizontalPadding * 2);
 
                 return Padding(
-                  padding: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: 28),
+                  padding: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: 24),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       _buildHeaderSection(isNarrow: isNarrow),
                       const SizedBox(height: 24),
-                      _buildMetricsCards(isNarrow: isNarrow),
+                      _buildMetricsCards(isNarrow: isNarrow, isMobile: isMobile),
                       const SizedBox(height: 28),
                       _buildMiddleSection(isNarrow: isNarrow),
                       const SizedBox(height: 28),
                       SingleChildScrollView(
                         scrollDirection: Axis.horizontal,
+                        physics: const BouncingScrollPhysics(),
                         child: SizedBox(
                           width: contentWidth,
                           child: _buildDetailedHoursLogCard(),
@@ -383,155 +388,108 @@ class _HoursReportScreenState extends State<HoursReportScreen> {
 
   // --- TOP NAVBAR ---
   Widget _buildTopNavbar() {
-    final activeCount = _tasks.where((t) => t.status == TaskStatus.inProgress).length;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isCompact = constraints.maxWidth < 780;
+        final isVeryCompact = constraints.maxWidth < 560;
+        final hPadding = constraints.maxWidth < 700 ? 16.0 : (constraints.maxWidth < 1100 ? 24.0 : 40.0);
 
-    return Container(
-      height: 64,
-      padding: const EdgeInsets.symmetric(horizontal: 40),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(
-          bottom: BorderSide(color: Color(0xFFEBEFF5), width: 1),
-        ),
-      ),
-      child: Row(
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 28,
-                height: 28,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF16152B),
-                  borderRadius: BorderRadius.circular(7),
-                ),
-                child: const Center(
-                  child: Icon(
-                    Icons.layers_rounded,
-                    color: Colors.white,
-                    size: 16,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Text(
-                'StudioTrack',
-                style: GoogleFonts.inter(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: const Color(0xFF0F172A),
-                  letterSpacing: -0.3,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(width: 32),
-          _buildNavTab('Workboard', isActive: false, onTap: widget.onNavigateToWorkboard),
-          const SizedBox(width: 8),
-          _buildNavTab('Hours Report', isActive: true, onTap: () {}),
-          const SizedBox(width: 8),
-          _buildNavTab('Login', isActive: false, onTap: () {
-            widget.onNavigateToLogin?.call();
-          }),
-          const Spacer(),
-          Container(
-            width: 240,
-            height: 36,
-            decoration: BoxDecoration(
-              color: const Color(0xFFF4F6FB),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: const Color(0xFFE5E9F2)),
+        return Container(
+          height: 64,
+          padding: EdgeInsets.symmetric(horizontal: hPadding),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            border: Border(
+              bottom: BorderSide(color: Color(0xFFEBEFF5), width: 1),
             ),
-            padding: const EdgeInsets.symmetric(horizontal: 10),
-            child: Row(
-              children: [
-                const Icon(Icons.search, size: 16, color: Color(0xFF94A3B8)),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: TextField(
-                    controller: _searchController,
-                    style: GoogleFonts.inter(fontSize: 12.5, color: const Color(0xFF1E293B)),
-                    decoration: InputDecoration(
-                      hintText: 'Search tasks or hours..',
-                      hintStyle: GoogleFonts.inter(
-                        fontSize: 12.5,
-                        color: const Color(0xFF94A3B8),
+          ),
+          child: Row(
+            children: [
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    height: 32,
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF16152B),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: Center(
+                      child: Image.asset(
+                        'assets/logo/exouzia_logo.png',
+                        width: 80,
+                        height: 18,
+                        fit: BoxFit.contain,
+                        errorBuilder: (context, error, stackTrace) => const Icon(
+                          Icons.layers_rounded,
+                          color: Colors.white,
+                          size: 16,
+                        ),
                       ),
-                      isDense: true,
-                      border: InputBorder.none,
-                      contentPadding: EdgeInsets.zero,
                     ),
                   ),
-                ),
-                if (_searchQuery.isNotEmpty)
-                  InkWell(
-                    onTap: () => _searchController.clear(),
-                    child: const Icon(Icons.clear, size: 14, color: Color(0xFF94A3B8)),
+                  const SizedBox(width: 10),
+                  Text(
+                    isVeryCompact ? 'Studio' : 'Design Media Studio',
+                    style: GoogleFonts.inter(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFF0F172A),
+                      letterSpacing: -0.3,
+                    ),
                   ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 16),
-          Container(
-            height: 20,
-            width: 1,
-            color: const Color(0xFFE2E8F0),
-          ),
-          const SizedBox(width: 16),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-            decoration: BoxDecoration(
-              color: const Color(0xFFEEF2FF),
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 6,
-                  height: 6,
-                  decoration: const BoxDecoration(
-                    color: Color(0xFF3B82F6),
-                    shape: BoxShape.circle,
-                  ),
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  '$activeCount Active',
-                  style: GoogleFonts.jetBrainsMono(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: const Color(0xFF312E81),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 16),
-          InkWell(
-            borderRadius: BorderRadius.circular(18),
-            onTap: () {
-              widget.onNavigateToLogin?.call();
-            },
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(18),
-              child: Image.asset(
-                designers.first.imagePath,
-                width: 32,
-                height: 32,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) => Container(
-                  width: 32,
-                  height: 32,
-                  color: const Color(0xFF3B82F6),
-                  child: const Center(
-                    child: Text('ST', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
-                  ),
-                ),
+                ],
               ),
-            ),
+              SizedBox(width: isCompact ? 12 : 28),
+              _buildNavTab('Workboard', isActive: false, onTap: widget.onNavigateToWorkboard),
+              const SizedBox(width: 6),
+              _buildNavTab('Hours Report', isActive: true, onTap: () {}),
+              const Spacer(),
+              if (!isVeryCompact) ...[
+                Container(
+                  width: isCompact ? 150 : 220,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF4F6FB),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: const Color(0xFFE5E9F2)),
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.search, size: 16, color: Color(0xFF94A3B8)),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: TextField(
+                          controller: _searchController,
+                          style: GoogleFonts.inter(fontSize: 12.5, color: const Color(0xFF1E293B)),
+                          decoration: InputDecoration(
+                            hintText: isCompact ? 'Search..' : 'Search tasks or hours..',
+                            hintStyle: GoogleFonts.inter(
+                              fontSize: 12.5,
+                              color: const Color(0xFF94A3B8),
+                            ),
+                            isDense: true,
+                            border: InputBorder.none,
+                            contentPadding: EdgeInsets.zero,
+                          ),
+                        ),
+                      ),
+                      if (_searchQuery.isNotEmpty)
+                        InkWell(
+                          onTap: () => _searchController.clear(),
+                          child: const Icon(Icons.clear, size: 14, color: Color(0xFF94A3B8)),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -596,7 +554,7 @@ class _HoursReportScreenState extends State<HoursReportScreen> {
         ),
         const SizedBox(height: 4),
         Text(
-          'Verified billable tracking, design workload throughput, and individual allocation logs for the active visual design team.',
+          'Studio hours tracking, design workload throughput, and individual allocation logs for the active visual design team.',
           style: GoogleFonts.inter(
             fontSize: 13,
             color: const Color(0xFF64748B),
@@ -681,7 +639,7 @@ class _HoursReportScreenState extends State<HoursReportScreen> {
   }
 
   // --- 4 METRICS CARDS ---
-  Widget _buildMetricsCards({required bool isNarrow}) {
+  Widget _buildMetricsCards({required bool isNarrow, bool isMobile = false}) {
     final currentTasks = _filteredTasks;
     double totalLogged = 0.0;
     for (final t in currentTasks) {
@@ -691,7 +649,6 @@ class _HoursReportScreenState extends State<HoursReportScreen> {
       totalLogged = 148.0;
     }
 
-    final billableHours = totalLogged * 0.85;
     final completedCount = currentTasks.where((t) => t.status == TaskStatus.completed).length;
     final activeReviewCount = currentTasks.where((t) => t.status == TaskStatus.inProgress || t.status == TaskStatus.pending).length;
     final avgDaily = totalLogged / (designers.isNotEmpty ? designers.length * 5 : 20);
@@ -719,37 +676,27 @@ class _HoursReportScreenState extends State<HoursReportScreen> {
     );
 
     final c2 = _buildMetricCard(
-      title: 'BILLABLE HOURS',
-      icon: Icons.verified_outlined,
-      iconColor: const Color(0xFF2563EB),
-      mainNumber: billableHours.toInt().toString(),
-      unit: 'hrs',
+      title: 'COMPLETED DELIVERABLES',
+      icon: Icons.task_alt_rounded,
+      iconColor: const Color(0xFF10B981),
+      mainNumber: completedCount > 0 ? completedCount.toString() : '16',
+      unit: 'done',
       customBottom: Row(
         children: [
+          Container(
+            width: 6,
+            height: 6,
+            decoration: const BoxDecoration(
+              color: Color(0xFF10B981),
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 6),
           Text(
-            '85.1% utilization',
+            'Production tasks finished',
             style: GoogleFonts.jetBrainsMono(
               fontSize: 10.5,
               color: const Color(0xFF64748B),
-            ),
-          ),
-          const SizedBox(width: 10),
-          Container(
-            width: 45,
-            height: 5,
-            decoration: BoxDecoration(
-              color: const Color(0xFFEEF2FF),
-              borderRadius: BorderRadius.circular(3),
-            ),
-            child: FractionallySizedBox(
-              alignment: Alignment.centerLeft,
-              widthFactor: 0.85,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: const Color(0xFF25206A),
-                  borderRadius: BorderRadius.circular(3),
-                ),
-              ),
             ),
           ),
         ],
@@ -798,6 +745,20 @@ class _HoursReportScreenState extends State<HoursReportScreen> {
         ),
       ),
     );
+
+    if (isMobile) {
+      return Column(
+        children: [
+          c1,
+          const SizedBox(height: 12),
+          c2,
+          const SizedBox(height: 12),
+          c3,
+          const SizedBox(height: 12),
+          c4,
+        ],
+      );
+    }
 
     if (isNarrow) {
       return Column(
@@ -1111,7 +1072,7 @@ class _HoursReportScreenState extends State<HoursReportScreen> {
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(
-                  d.billablePercent,
+                  d.statusBadge,
                   style: GoogleFonts.jetBrainsMono(
                     fontSize: 10,
                     fontWeight: FontWeight.w600,
@@ -1162,7 +1123,7 @@ class _HoursReportScreenState extends State<HoursReportScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'BILLABLE',
+                        'COMPLETED',
                         style: GoogleFonts.jetBrainsMono(
                           fontSize: 8.5,
                           fontWeight: FontWeight.w600,
@@ -1172,11 +1133,11 @@ class _HoursReportScreenState extends State<HoursReportScreen> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        '${d.billableHours.toStringAsFixed(1)}h',
+                        '${d.completedTasks} Done',
                         style: GoogleFonts.jetBrainsMono(
                           fontSize: 11.5,
                           fontWeight: FontWeight.w700,
-                          color: const Color(0xFF2563EB),
+                          color: const Color(0xFF10B981),
                         ),
                       ),
                     ],
@@ -1187,7 +1148,7 @@ class _HoursReportScreenState extends State<HoursReportScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'TASKS',
+                        'ACTIVE',
                         style: GoogleFonts.jetBrainsMono(
                           fontSize: 8.5,
                           fontWeight: FontWeight.w600,
@@ -1197,7 +1158,7 @@ class _HoursReportScreenState extends State<HoursReportScreen> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        '${d.activeTasks} Active',
+                        '${d.activeTasks} Tasks',
                         style: GoogleFonts.jetBrainsMono(
                           fontSize: 11.5,
                           fontWeight: FontWeight.w700,
@@ -1750,6 +1711,9 @@ class _HoursReportScreenState extends State<HoursReportScreen> {
   Widget _buildLogHeaderCell(String text, {double? width, int? flex}) {
     final widget = Text(
       text,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      softWrap: false,
       style: GoogleFonts.jetBrainsMono(
         fontSize: 10,
         fontWeight: FontWeight.w600,
@@ -1766,47 +1730,53 @@ class _HoursReportScreenState extends State<HoursReportScreen> {
 
   // --- FOOTER ---
   Widget _buildFooter({required bool isNarrow}) {
-    if (isNarrow) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'StudioTrack • Atelier Core v1.4',
-            style: GoogleFonts.jetBrainsMono(
-              fontSize: 11,
-              color: const Color(0xFF94A3B8),
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Text(
+              'Architectural Precision • Minimalist Studio Operations',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.jetBrainsMono(
+                fontSize: 10.5,
+                color: const Color(0xFF94A3B8),
+              ),
             ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'Architectural Precision • Minimalist Workflow',
-            style: GoogleFonts.jetBrainsMono(
-              fontSize: 11,
-              color: const Color(0xFF94A3B8),
+            const SizedBox(height: 6),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Container(
+                //   width: 6,
+                //   height: 6,
+                //   decoration: const BoxDecoration(
+                //     color: Color(0xFF4F46E5),
+                //     shape: BoxShape.circle,
+                //   ),
+                // ),
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Text(
+                    'Design Media Studio • Atelier Core v1.4 • Organized & Built by Habeeb Rahman (habeebhr121@gmail.com)',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.jetBrainsMono(
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w500,
+                      color: const Color.fromARGB(70, 100, 116, 139),
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ),
-        ],
-      );
-    }
-
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          'StudioTrack • Atelier Core v1.4',
-          style: GoogleFonts.jetBrainsMono(
-            fontSize: 11,
-            color: const Color(0xFF94A3B8),
-          ),
+            
+            
+          ],
         ),
-        Text(
-          'Architectural Precision • Minimalist Workflow',
-          style: GoogleFonts.jetBrainsMono(
-            fontSize: 11,
-            color: const Color(0xFF94A3B8),
-          ),
-        ),
-      ],
+      ),
     );
   }
 }

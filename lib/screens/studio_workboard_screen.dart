@@ -1,9 +1,9 @@
 import 'dart:async';
 import 'dart:io' show File;
-import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:studio_track/data/designers_list.dart';
 import 'package:studio_track/data/dummy_data.dart';
@@ -13,9 +13,9 @@ import 'package:studio_track/services/firebase_task_service.dart';
 
 enum TaskStatus {
   inProgress('In Progress', Color(0xFF3B82F6), Color(0xFFEFF6FF), Color(0xFF2563EB)),
-  completed('Completed', Color(0xFF4F46E5), Color(0xFFEEF2FF), Color(0xFF4338CA)),
-  pending('Pending', Color(0xFF64748B), Color(0xFFF1F5F9), Color(0xFF475569)),
-  progressed('Progressed', Color(0xFF10B981), Color(0xFFECFDF5), Color(0xFF047857));
+  completed('Completed', Color(0xFF10B981), Color(0xFFECFDF5), Color(0xFF047857)),
+  pending('Pending', Color(0xFFEF4444), Color(0xFFFEF2F2), Color(0xFFB91C1C)),
+  progressed('Progressed', Color(0xFFF59E0B), Color(0xFFFFFBEB), Color(0xFFB45309));
 
   final String label;
   final Color dotColor;
@@ -134,7 +134,7 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
   bool _sortAscending = false;
 
   late Timer _timer;
-  int _secondsElapsed = 6142; // Starts at 01:42:22
+  DateTime _currentIstTime = DateTime.now().toUtc().add(const Duration(hours: 5, minutes: 30));
 
   final TextEditingController _searchController = TextEditingController();
   final TextEditingController _tableSearchController = TextEditingController();
@@ -151,20 +151,30 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
   }
 
   void _startTimer() {
+    _updateIstTime();
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (mounted) {
-        setState(() {
-          _secondsElapsed++;
-        });
+        _updateIstTime();
       }
     });
   }
 
-  String _formatTime(int totalSeconds) {
-    final hours = totalSeconds ~/ 3600;
-    final minutes = (totalSeconds % 3600) ~/ 60;
-    final seconds = totalSeconds % 60;
-    return '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+  void _updateIstTime() {
+    final ist = DateTime.now().toUtc().add(const Duration(hours: 5, minutes: 30));
+    setState(() {
+      _currentIstTime = ist;
+    });
+  }
+
+  String _formatCurrentIstTime() {
+    final now = _currentIstTime;
+    final hour = now.hour;
+    final minute = now.minute.toString().padLeft(2, '0');
+    final second = now.second.toString().padLeft(2, '0');
+    final period = hour >= 12 ? 'PM' : 'AM';
+    final hour12 = hour == 0 ? 12 : (hour > 12 ? hour - 12 : hour);
+    final hourStr = hour12.toString().padLeft(2, '0');
+    return '$hourStr:$minute:$second $period';
   }
 
   String _formatDate(DateTime? dt) {
@@ -463,7 +473,396 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
     }).toList();
   }
 
-  // --- ACTIONS: UPDATE STATUS, EDIT, ATTACH, DELETE ---
+  // --- ACTIONS: WORK BRIEF POPUP, UPDATE STATUS, EDIT, ATTACH, DELETE ---
+
+  void _openWorkBriefDialog(StudioTask task) {
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          backgroundColor: Colors.white,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+          child: Container(
+            width: 580,
+            constraints: const BoxConstraints(maxHeight: 700),
+            padding: const EdgeInsets.all(28),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFEEF2FF),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(Icons.description_outlined, size: 20, color: Color(0xFF25206A)),
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          'Work Brief & Details',
+                          style: GoogleFonts.inter(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color: const Color(0xFF0F172A),
+                          ),
+                        ),
+                      ],
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      icon: const Icon(Icons.close, size: 20, color: Color(0xFF64748B)),
+                      splashRadius: 18,
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 18),
+
+                // Main Scrollable Content
+                Flexible(
+                  child: SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Task & Client Banner
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF8FAFC),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: const Color(0xFFE2E8F0)),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  if (task.isPriority) ...[
+                                    Container(
+                                      margin: const EdgeInsets.only(right: 8, top: 2),
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFFEF2F2),
+                                        borderRadius: BorderRadius.circular(4),
+                                        border: Border.all(color: const Color(0xFFFECDD3)),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          const Icon(Icons.bolt_rounded, size: 12, color: Color(0xFFE11D48)),
+                                          const SizedBox(width: 2),
+                                          Text(
+                                            'HIGH',
+                                            style: GoogleFonts.jetBrainsMono(
+                                              fontSize: 9.5,
+                                              fontWeight: FontWeight.w700,
+                                              color: const Color(0xFFE11D48),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                  Expanded(
+                                    child: Text(
+                                      task.workName,
+                                      style: GoogleFonts.inter(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w700,
+                                        color: const Color(0xFF0F172A),
+                                      ),
+                                    ),
+                                  ),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFEEF2FF),
+                                      borderRadius: BorderRadius.circular(5),
+                                    ),
+                                    child: Text(
+                                      task.typeTag,
+                                      style: GoogleFonts.jetBrainsMono(
+                                        fontSize: 11.5,
+                                        fontWeight: FontWeight.w600,
+                                        color: const Color(0xFF312E81),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 10),
+                              Row(
+                                children: [
+                                  _buildDesignerAvatar(task.avatarUrl, task.designerName, size: 28),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    task.designerName,
+                                    style: GoogleFonts.inter(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                      color: const Color(0xFF1E293B),
+                                    ),
+                                  ),
+                                  Text(
+                                    ' (${task.designerRole})',
+                                    style: GoogleFonts.jetBrainsMono(
+                                      fontSize: 11,
+                                      color: const Color(0xFF64748B),
+                                    ),
+                                  ),
+                                  const Spacer(),
+                                  Text(
+                                    'Client: ${task.clientName}',
+                                    style: GoogleFonts.jetBrainsMono(
+                                      fontSize: 11.5,
+                                      fontWeight: FontWeight.w500,
+                                      color: const Color(0xFF475569),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 18),
+
+                        // Section Header: Work Brief & Content
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'WORK BRIEF & CONTENT',
+                              style: GoogleFonts.jetBrainsMono(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 0.8,
+                                color: const Color(0xFF64748B),
+                              ),
+                            ),
+                            InkWell(
+                              borderRadius: BorderRadius.circular(4),
+                              onTap: () {
+                                Clipboard.setData(ClipboardData(text: task.workBrief));
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Brief copied to clipboard'),
+                                    duration: Duration(seconds: 1),
+                                    behavior: SnackBarBehavior.floating,
+                                  ),
+                                );
+                              },
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                child: Row(
+                                  children: [
+                                    const Icon(Icons.copy_rounded, size: 13, color: Color(0xFF25206A)),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      'Copy',
+                                      style: GoogleFonts.jetBrainsMono(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w600,
+                                        color: const Color(0xFF25206A),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+
+                        // Full Work Brief Card
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: const Color(0xFFCBD5E1)),
+                          ),
+                          child: SelectableText(
+                            task.workBrief.isEmpty ? 'No additional brief details provided.' : task.workBrief,
+                            style: GoogleFonts.jetBrainsMono(
+                              fontSize: 13.5,
+                              height: 1.6,
+                              color: const Color(0xFF1E293B),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Time & Status Info Bar
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF1F5F9),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'TIME WINDOW',
+                                      style: GoogleFonts.jetBrainsMono(fontSize: 9.5, fontWeight: FontWeight.w700, color: const Color(0xFF64748B)),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      '${task.date} • ${task.timeWindow}',
+                                      style: GoogleFonts.jetBrainsMono(fontSize: 12, fontWeight: FontWeight.w600, color: const Color(0xFF0F172A)),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                decoration: BoxDecoration(
+                                  color: task.status.bgColor,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'CURRENT STATUS',
+                                      style: GoogleFonts.jetBrainsMono(fontSize: 9.5, fontWeight: FontWeight.w700, color: task.status.textColor),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Row(
+                                      children: [
+                                        Container(
+                                          width: 6,
+                                          height: 6,
+                                          decoration: BoxDecoration(
+                                            color: task.status.dotColor,
+                                            shape: BoxShape.circle,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          task.status.label,
+                                          style: GoogleFonts.jetBrainsMono(fontSize: 12, fontWeight: FontWeight.w600, color: task.status.textColor),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        // Attachments Preview if any
+                        if (task.attachments.isNotEmpty) ...[
+                          const SizedBox(height: 16),
+                          Text(
+                            'ATTACHMENTS (${task.attachments.length})',
+                            style: GoogleFonts.jetBrainsMono(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.8,
+                              color: const Color(0xFF64748B),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: task.attachments.map((att) {
+                              return InkWell(
+                                borderRadius: BorderRadius.circular(6),
+                                onTap: () => _openAttachDialog(task),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFEFF6FF),
+                                    borderRadius: BorderRadius.circular(6),
+                                    border: Border.all(color: const Color(0xFFBFDBFE)),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(Icons.image_outlined, size: 14, color: Color(0xFF2563EB)),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        att.name,
+                                        style: GoogleFonts.jetBrainsMono(
+                                          fontSize: 11.5,
+                                          fontWeight: FontWeight.w500,
+                                          color: const Color(0xFF1D4ED8),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                // Footer Buttons
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                      child: Text(
+                        'Close',
+                        style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: const Color(0xFF64748B)),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    OutlinedButton.icon(
+                      onPressed: () {
+                        Navigator.pop(ctx);
+                        _openEditTaskDialog(task);
+                      },
+                      icon: const Icon(Icons.edit_outlined, size: 14, color: Color(0xFF25206A)),
+                      label: Text(
+                        'Edit Task',
+                        style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: const Color(0xFF25206A)),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        side: const BorderSide(color: Color(0xFFCBD5E1)),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
 
   void _openUpdateStatusDialog(StudioTask task) {
     TaskStatus currentStatus = task.status;
@@ -1697,6 +2096,8 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
 
     Future<void> pickFilesFromDevice(void Function(void Function()) setDialogState) async {
       try {
+        const int maxAttachmentBytes = 10 * 1024 * 1024; // 10 MB Limit
+
         final result = await FilePickerPlatform.instance.pickFiles(
           type: FileType.custom,
           allowedExtensions: ['png', 'jpg', 'jpeg', 'webp', 'gif', 'svg', 'pdf', 'mp4', 'mov', 'zip', 'psd', 'ai', 'fig'],
@@ -1717,6 +2118,31 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
                   fileBytes = ioFile.readAsBytesSync();
                 }
               }
+            }
+
+            if (fileSize > maxAttachmentBytes) {
+              if (mounted) {
+                final sizeMb = (fileSize / (1024 * 1024)).toStringAsFixed(1);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Row(
+                      children: [
+                        const Icon(Icons.error_outline, color: Colors.white, size: 18),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'File "${file.name}" exceeds the 10 MB limit ($sizeMb MB).',
+                          ),
+                        ),
+                      ],
+                    ),
+                    backgroundColor: const Color(0xFFE11D48),
+                    behavior: SnackBarBehavior.floating,
+                    duration: const Duration(seconds: 4),
+                  ),
+                );
+              }
+              continue; // Skip oversized file
             }
 
             final sizeInKb = (fileSize / 1024);
@@ -1855,7 +2281,7 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
                               ),
                               const SizedBox(height: 2),
                               Text(
-                                'Supports PNG, JPG, JPEG, SVG, PDF, PSD, AI, FIG, MP4 up to 50 MB',
+                                'Supports PNG, JPG, JPEG, SVG, PDF, PSD, AI, FIG, MP4 up to 10 MB',
                                 style: GoogleFonts.jetBrainsMono(
                                   fontSize: 10,
                                   color: const Color(0xFF94A3B8),
@@ -2424,73 +2850,73 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
                               const SizedBox(height: 8),
 
                               // Quick Clickable Horizontal Chips
-                              SingleChildScrollView(
-                                scrollDirection: Axis.horizontal,
-                                child: Row(
-                                  children: [
-                                    for (final pt in uniquePendingTasks) ...[
-                                      Padding(
-                                        padding: const EdgeInsets.only(right: 8),
-                                        child: InkWell(
-                                          borderRadius: BorderRadius.circular(6),
-                                          onTap: () {
-                                            setDialogState(() {
-                                              selectedPendingTask = pt;
-                                              workNameCtrl.text = pt.workName;
-                                              clientCtrl.text = pt.clientName;
-                                              briefCtrl.text = pt.workBrief;
-                                              selectedDesignerName = _mapDesignerName(pt.designerName);
-                                              selectedType = _mapTypeTag(pt.typeTag);
-                                              selectedStatus = TaskStatus.inProgress;
-                                            });
-                                          },
-                                          child: Container(
-                                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                            decoration: BoxDecoration(
-                                              color: selectedPendingTask?.workName == pt.workName
-                                                  ? const Color(0xFF322A86)
-                                                  : Colors.white,
-                                              borderRadius: BorderRadius.circular(6),
-                                              border: Border.all(
-                                                color: selectedPendingTask?.workName == pt.workName
-                                                    ? const Color(0xFF322A86)
-                                                    : const Color(0xFFE2E8F0),
-                                              ),
-                                            ),
-                                            child: Row(
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                Icon(
-                                                  selectedPendingTask?.workName == pt.workName
-                                                      ? Icons.check_circle_rounded
-                                                      : Icons.pending_actions_rounded,
-                                                  size: 13,
-                                                  color: selectedPendingTask?.workName == pt.workName
-                                                      ? Colors.white
-                                                      : const Color(0xFFF59E0B),
-                                                ),
-                                                const SizedBox(width: 6),
-                                                Text(
-                                                  pt.workName,
-                                                  style: GoogleFonts.inter(
-                                                    fontSize: 11.5,
-                                                    fontWeight: selectedPendingTask?.workName == pt.workName
-                                                        ? FontWeight.w700
-                                                        : FontWeight.w500,
-                                                    color: selectedPendingTask?.workName == pt.workName
-                                                        ? Colors.white
-                                                        : const Color(0xFF334155),
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ],
-                                ),
-                              ),
+                              // SingleChildScrollView(
+                              //   scrollDirection: Axis.horizontal,
+                              //   child: Row(
+                              //     children: [
+                              //       for (final pt in uniquePendingTasks) ...[
+                              //         Padding(
+                              //           padding: const EdgeInsets.only(right: 8),
+                              //           child: InkWell(
+                              //             borderRadius: BorderRadius.circular(6),
+                              //             onTap: () {
+                              //               setDialogState(() {
+                              //                 selectedPendingTask = pt;
+                              //                 workNameCtrl.text = pt.workName;
+                              //                 clientCtrl.text = pt.clientName;
+                              //                 briefCtrl.text = pt.workBrief;
+                              //                 selectedDesignerName = _mapDesignerName(pt.designerName);
+                              //                 selectedType = _mapTypeTag(pt.typeTag);
+                              //                 selectedStatus = TaskStatus.inProgress;
+                              //               });
+                              //             },
+                              //             child: Container(
+                              //               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                              //               decoration: BoxDecoration(
+                              //                 color: selectedPendingTask?.workName == pt.workName
+                              //                     ? const Color(0xFF322A86)
+                              //                     : Colors.white,
+                              //                 borderRadius: BorderRadius.circular(6),
+                              //                 border: Border.all(
+                              //                   color: selectedPendingTask?.workName == pt.workName
+                              //                       ? const Color(0xFF322A86)
+                              //                       : const Color(0xFFE2E8F0),
+                              //                 ),
+                              //               ),
+                              //               child: Row(
+                              //                 mainAxisSize: MainAxisSize.min,
+                              //                 children: [
+                              //                   Icon(
+                              //                     selectedPendingTask?.workName == pt.workName
+                              //                         ? Icons.check_circle_rounded
+                              //                         : Icons.pending_actions_rounded,
+                              //                     size: 13,
+                              //                     color: selectedPendingTask?.workName == pt.workName
+                              //                         ? Colors.white
+                              //                         : const Color(0xFFF59E0B),
+                              //                   ),
+                              //                   const SizedBox(width: 6),
+                              //                   Text(
+                              //                     pt.workName,
+                              //                     style: GoogleFonts.inter(
+                              //                       fontSize: 11.5,
+                              //                       fontWeight: selectedPendingTask?.workName == pt.workName
+                              //                           ? FontWeight.w700
+                              //                           : FontWeight.w500,
+                              //                       color: selectedPendingTask?.workName == pt.workName
+                              //                           ? Colors.white
+                              //                           : const Color(0xFF334155),
+                              //                     ),
+                              //                   ),
+                              //                 ],
+                              //               ),
+                              //             ),
+                              //           ),
+                              //         ),
+                              //       ],
+                              //     ],
+                              //   ),
+                              // ),
 
                               if (selectedPendingTask != null) ...[
                                 const SizedBox(height: 10),
@@ -3081,22 +3507,27 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
             LayoutBuilder(
               builder: (context, constraints) {
                 final isNarrow = constraints.maxWidth < 1120;
-                final horizontalPadding = constraints.maxWidth < 700 ? 16.0 : 40.0;
-                final contentWidth = constraints.maxWidth < 1180 ? 1180.0 : (constraints.maxWidth - horizontalPadding * 2);
+                final isMobile = constraints.maxWidth < 600;
+                final horizontalPadding = constraints.maxWidth < 700 ? 16.0 : (constraints.maxWidth < 1200 ? 24.0 : 40.0);
+                const minTableWidth = 1320.0;
+                final contentWidth = constraints.maxWidth < (minTableWidth + horizontalPadding * 2)
+                    ? minTableWidth
+                    : (constraints.maxWidth - horizontalPadding * 2);
 
                 return Padding(
-                  padding: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: 28),
+                  padding: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: 24),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       _buildHeaderSection(isNarrow: isNarrow),
                       const SizedBox(height: 24),
-                      _buildMetricsRow(isNarrow: isNarrow),
+                      _buildMetricsRow(isNarrow: isNarrow, isMobile: isMobile),
                       const SizedBox(height: 28),
                       _buildFiltersBar(isNarrow: isNarrow),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 14),
                       SingleChildScrollView(
                         scrollDirection: Axis.horizontal,
+                        physics: const BouncingScrollPhysics(),
                         child: SizedBox(
                           width: contentWidth,
                           child: _buildDataTableCard(),
@@ -3120,155 +3551,148 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
 
   // --- TOP NAVBAR ---
   Widget _buildTopNavbar() {
-    return Container(
-      height: 64,
-      padding: const EdgeInsets.symmetric(horizontal: 40),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(
-          bottom: BorderSide(color: Color(0xFFEBEFF5), width: 1),
-        ),
-      ),
-      child: Row(
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 28,
-                height: 28,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF16152B),
-                  borderRadius: BorderRadius.circular(7),
-                ),
-                child: const Center(
-                  child: Icon(
-                    Icons.layers_rounded,
-                    color: Colors.white,
-                    size: 16,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Text(
-                'Design Media Studio',
-                style: GoogleFonts.inter(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: const Color(0xFF0F172A),
-                  letterSpacing: -0.3,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(width: 32),
-          _buildNavTab('Workboard', isActive: true, onTap: () {}),
-          const SizedBox(width: 8),
-          _buildNavTab('Hours Report', isActive: false, onTap: () {
-            widget.onNavigateToHoursReport?.call();
-          }),
-          const SizedBox(width: 8),
-          _buildNavTab('Login', isActive: false, onTap: () {
-            widget.onNavigateToLogin?.call();
-          }),
-          const Spacer(),
-          Container(
-            width: 240,
-            height: 36,
-            decoration: BoxDecoration(
-              color: const Color(0xFFF4F6FB),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: const Color(0xFFE5E9F2)),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isCompact = constraints.maxWidth < 780;
+        final isVeryCompact = constraints.maxWidth < 560;
+        final hPadding = constraints.maxWidth < 700 ? 16.0 : (constraints.maxWidth < 1100 ? 24.0 : 40.0);
+
+        return Container(
+          height: 64,
+          padding: EdgeInsets.symmetric(horizontal: hPadding),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            border: Border(
+              bottom: BorderSide(color: Color(0xFFEBEFF5), width: 1),
             ),
-            padding: const EdgeInsets.symmetric(horizontal: 10),
-            child: Row(
-              children: [
-                const Icon(Icons.search, size: 16, color: Color(0xFF94A3B8)),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: TextField(
-                    controller: _searchController,
-                    onChanged: (val) {
-                      setState(() {
-                        _searchQuery = val;
-                      });
-                    },
-                    style: GoogleFonts.inter(fontSize: 12.5, color: const Color(0xFF1E293B)),
-                    decoration: InputDecoration(
-                      hintText: 'Search tasks or hours..',
-                      hintStyle: GoogleFonts.inter(
-                        fontSize: 12.5,
-                        color: const Color(0xFF94A3B8),
+          ),
+          child: Row(
+            children: [
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    height: 32,
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF16152B),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: Center(
+                      child: Image.asset(
+                        'assets/logo/exouzia_logo.png',
+                        width: 80,
+                        height: 18,
+                        fit: BoxFit.contain,
+                        errorBuilder: (context, error, stackTrace) => const Icon(
+                          Icons.layers_rounded,
+                          color: Colors.white,
+                          size: 16,
+                        ),
                       ),
-                      isDense: true,
-                      border: InputBorder.none,
-                      contentPadding: EdgeInsets.zero,
                     ),
                   ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 16),
-          Container(
-            height: 20,
-            width: 1,
-            color: const Color(0xFFE2E8F0),
-          ),
-          const SizedBox(width: 16),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-            decoration: BoxDecoration(
-              color: const Color(0xFFEEF2FF),
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 6,
-                  height: 6,
-                  decoration: const BoxDecoration(
-                    color: Color(0xFF3B82F6),
-                    shape: BoxShape.circle,
+                  const SizedBox(width: 10),
+                  Text(
+                    isVeryCompact ? 'Studio' : 'Design Media Studio',
+                    style: GoogleFonts.inter(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFF0F172A),
+                      letterSpacing: -0.3,
+                    ),
                   ),
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  '4 Active',
-                  style: GoogleFonts.jetBrainsMono(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: const Color(0xFF312E81),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 16),
-          InkWell(
-            borderRadius: BorderRadius.circular(18),
-            onTap: () {
-              widget.onNavigateToLogin?.call();
-            },
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(18),
-              child: Image.network(
-                'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80',
-                width: 32,
-                height: 32,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) => Container(
-                  width: 32,
-                  height: 32,
-                  color: const Color(0xFF3B82F6),
-                  child: const Center(
-                    child: Text('ER', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
-                  ),
-                ),
+                ],
               ),
-            ),
+              SizedBox(width: isCompact ? 12 : 28),
+              _buildNavTab('Workboard', isActive: true, onTap: () {}),
+              const SizedBox(width: 6),
+              _buildNavTab('Hours Report', isActive: false, onTap: () {
+                widget.onNavigateToHoursReport?.call();
+              }),
+              const Spacer(),
+              if (!isVeryCompact) ...[
+                Container(
+                  width: isCompact ? 150 : 220,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF4F6FB),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: const Color(0xFFE5E9F2)),
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.search, size: 16, color: Color(0xFF94A3B8)),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: TextField(
+                          controller: _searchController,
+                          onChanged: (val) {
+                            setState(() {
+                              _searchQuery = val;
+                            });
+                          },
+                          style: GoogleFonts.inter(fontSize: 12.5, color: const Color(0xFF1E293B)),
+                          decoration: InputDecoration(
+                            hintText: isCompact ? 'Search..' : 'Search tasks or hours..',
+                            hintStyle: GoogleFonts.inter(
+                              fontSize: 12.5,
+                              color: const Color(0xFF94A3B8),
+                            ),
+                            isDense: true,
+                            border: InputBorder.none,
+                            contentPadding: EdgeInsets.zero,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+              ],
+              if (!isCompact) ...[
+                Container(
+                  height: 20,
+                  width: 1,
+                  color: const Color(0xFFE2E8F0),
+                ),
+                const SizedBox(width: 12),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEEF2FF),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 6,
+                        height: 6,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFF3B82F6),
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        '4 Active',
+                        style: GoogleFonts.jetBrainsMono(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xFF312E81),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -3366,7 +3790,7 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
               ),
               const SizedBox(width: 8),
               Text(
-                'Live Session: ${_formatTime(_secondsElapsed)}',
+                'Live: ${_formatCurrentIstTime()}',
                 style: GoogleFonts.jetBrainsMono(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
@@ -3422,7 +3846,7 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
   }
 
   // --- METRICS ROW (4 CARDS) ---
-  Widget _buildMetricsRow({required bool isNarrow}) {
+  Widget _buildMetricsRow({required bool isNarrow, bool isMobile = false}) {
     final dayTasks = _tasks.where((t) => _isTaskInActiveTimeframe(t)).toList();
     final activeCount = dayTasks.where((t) => t.status == TaskStatus.inProgress || t.status == TaskStatus.pending).length;
     final completedCount = dayTasks.where((t) => t.status == TaskStatus.completed).length;
@@ -3482,6 +3906,20 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
       boldValue: '$activeStaffCount',
       subText: 'designers',
     );
+
+    if (isMobile) {
+      return Column(
+        children: [
+          c1,
+          const SizedBox(height: 12),
+          c2,
+          const SizedBox(height: 12),
+          c3,
+          const SizedBox(height: 12),
+          c4,
+        ],
+      );
+    }
 
     if (isNarrow) {
       return Column(
@@ -3885,13 +4323,20 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
             child: Row(
               children: [
                 _buildTableHeaderCell('DATE', width: 95),
-                _buildTableHeaderCell('ASSIGNED TO', width: 165),
-                _buildTableHeaderCell('WORK NAME', width: 180),
+                const SizedBox(width: 14),
+                _buildTableHeaderCell('ASSIGNED TO', width: 175),
+                const SizedBox(width: 16),
+                _buildTableHeaderCell('WORK NAME', width: 195),
+                const SizedBox(width: 16),
                 _buildTableHeaderCell('TYPE', width: 130),
-                _buildTableHeaderCell('WORK BRIEF & CONTENT', flex: 3),
-                _buildTableHeaderCell('ATTACHMENTS', width: 130),
-                _buildTableHeaderCell('STATUS', width: 140),
-                _buildTableHeaderCell('TIME WINDOW / TOTAL', width: 155),
+                const SizedBox(width: 16),
+                _buildTableHeaderCell('WORK BRIEF & CONTENT', flex: 2),
+                const SizedBox(width: 16),
+                _buildTableHeaderCell('ATTACHMENTS', width: 120),
+                const SizedBox(width: 12),
+                _buildTableHeaderCell('STATUS', width: 135),
+                const SizedBox(width: 12),
+                _buildTableHeaderCell('TIME WINDOW / TOTAL', width: 165),
                 const SizedBox(width: 36),
               ],
             ),
@@ -3917,14 +4362,14 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
                       isGlobalStatusFilter
                           ? 'No $_selectedStatus tasks found in $_selectedDateFilter'
                           : 'No tasks logged for ${_getActiveDateString()}',
-                      style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: const Color(0xFF334155)),
+                      style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600, color: const Color(0xFF334155)),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       isGlobalStatusFilter
                           ? 'Active tasks in the selected timeframe will appear here.'
                           : 'Select Today, Yesterday, or click "+ Add New Work" above to log hours for this day.',
-                      style: GoogleFonts.jetBrainsMono(fontSize: 11, color: const Color(0xFF94A3B8)),
+                      style: GoogleFonts.jetBrainsMono(fontSize: 12, color: const Color(0xFF94A3B8)),
                     ),
                   ],
                 ),
@@ -3949,7 +4394,7 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
 
           // Table Footer Summary & Sort
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
             decoration: const BoxDecoration(
               border: Border(top: BorderSide(color: Color(0xFFF1F5F9), width: 1)),
             ),
@@ -3961,8 +4406,9 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
                       ? 'Showing ${tasks.length} studio assignments ($_selectedStatus • $_selectedDateFilter)'
                       : 'Showing ${tasks.length} studio assignments for ${_getActiveDateString()} ($_selectedDateFilter)',
                   style: GoogleFonts.jetBrainsMono(
-                    fontSize: 11,
-                    color: const Color(0xFF8E9BAE),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: const Color(0xFF64748B),
                   ),
                 ),
                 InkWell(
@@ -3977,12 +4423,13 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
                       Text(
                         'Sort: By Recent',
                         style: GoogleFonts.jetBrainsMono(
-                          fontSize: 11,
-                          color: const Color(0xFF64748B),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: const Color(0xFF475569),
                         ),
                       ),
                       const SizedBox(width: 4),
-                      const Icon(Icons.swap_vert_rounded, size: 14, color: Color(0xFF64748B)),
+                      const Icon(Icons.swap_vert_rounded, size: 16, color: Color(0xFF475569)),
                     ],
                   ),
                 ),
@@ -3997,11 +4444,14 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
   Widget _buildTableHeaderCell(String text, {double? width, int? flex}) {
     final widget = Text(
       text,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      softWrap: false,
       style: GoogleFonts.jetBrainsMono(
-        fontSize: 10,
+        fontSize: 11.5,
         fontWeight: FontWeight.w600,
         letterSpacing: 0.8,
-        color: const Color(0xFF94A3B8),
+        color: const Color(0xFF64748B),
       ),
     );
 
@@ -4023,18 +4473,20 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
             child: Text(
               task.date,
               style: GoogleFonts.jetBrainsMono(
-                fontSize: 11.5,
-                color: const Color(0xFF64748B),
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: const Color(0xFF475569),
               ),
             ),
           ),
+          const SizedBox(width: 14),
 
           // ASSIGNED TO
           SizedBox(
-            width: 165,
+            width: 175,
             child: Row(
               children: [
-                _buildDesignerAvatar(task.avatarUrl, task.designerName, size: 32),
+                _buildDesignerAvatar(task.avatarUrl, task.designerName, size: 34),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Column(
@@ -4043,7 +4495,7 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
                       Text(
                         task.designerName,
                         style: GoogleFonts.inter(
-                          fontSize: 12.5,
+                          fontSize: 13.5,
                           fontWeight: FontWeight.w600,
                           color: const Color(0xFF0F172A),
                         ),
@@ -4052,8 +4504,8 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
                       Text(
                         task.designerRole,
                         style: GoogleFonts.jetBrainsMono(
-                          fontSize: 10,
-                          color: const Color(0xFF94A3B8),
+                          fontSize: 11,
+                          color: const Color(0xFF64748B),
                         ),
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -4063,10 +4515,11 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
               ],
             ),
           ),
+          const SizedBox(width: 16),
 
           // WORK NAME
           SizedBox(
-            width: 180,
+            width: 195,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -4087,12 +4540,12 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(Icons.bolt_rounded, size: 11, color: Color(0xFFE11D48)),
-                              const SizedBox(width: 1),
+                              const Icon(Icons.bolt_rounded, size: 12, color: Color(0xFFE11D48)),
+                              const SizedBox(width: 2),
                               Text(
                                 'HIGH',
                                 style: GoogleFonts.jetBrainsMono(
-                                  fontSize: 8,
+                                  fontSize: 9.5,
                                   fontWeight: FontWeight.w700,
                                   color: const Color(0xFFE11D48),
                                 ),
@@ -4106,7 +4559,7 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
                       child: Text(
                         task.workName,
                         style: GoogleFonts.inter(
-                          fontSize: 12.5,
+                          fontSize: 14,
                           fontWeight: FontWeight.w700,
                           color: const Color(0xFF0F172A),
                         ),
@@ -4119,6 +4572,7 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
               ],
             ),
           ),
+          const SizedBox(width: 16),
 
           // TYPE (Pill)
           SizedBox(
@@ -4126,15 +4580,15 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
             child: Align(
               alignment: Alignment.centerLeft,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
                   color: const Color(0xFFEEF2FF),
-                  borderRadius: BorderRadius.circular(4),
+                  borderRadius: BorderRadius.circular(5),
                 ),
                 child: Text(
                   task.typeTag,
                   style: GoogleFonts.jetBrainsMono(
-                    fontSize: 10.5,
+                    fontSize: 12,
                     fontWeight: FontWeight.w500,
                     color: const Color(0xFF312E81),
                   ),
@@ -4144,31 +4598,52 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
               ),
             ),
           ),
+          const SizedBox(width: 16),
 
-          // WORK BRIEF & CONTENT
+          // WORK BRIEF & CONTENT (Clickable to open full popup modal)
           Expanded(
-            flex: 3,
-            child: Text(
-              task.workBrief,
-              style: GoogleFonts.jetBrainsMono(
-                fontSize: 11,
-                color: const Color(0xFF64748B),
+            flex: 2,
+            child: Tooltip(
+              message: 'Click to view entire work brief',
+              child: InkWell(
+                borderRadius: BorderRadius.circular(6),
+                onTap: () => _openWorkBriefDialog(task),
+                hoverColor: const Color(0xFFF1F5F9),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          task.workBrief,
+                          style: GoogleFonts.jetBrainsMono(
+                            fontSize: 12.5,
+                            color: const Color(0xFF475569),
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      const Icon(Icons.open_in_new_rounded, size: 13, color: Color(0xFF94A3B8)),
+                    ],
+                  ),
+                ),
               ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
             ),
           ),
+          const SizedBox(width: 16),
 
           // ATTACHMENTS BUTTON
           SizedBox(
-            width: 130,
+            width: 120,
             child: Align(
               alignment: Alignment.centerLeft,
               child: InkWell(
                 borderRadius: BorderRadius.circular(6),
                 onTap: () => _openAttachDialog(task),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(
                     color: task.attachments.isNotEmpty ? const Color(0xFFEFF6FF) : const Color(0xFFF1F5F9),
                     borderRadius: BorderRadius.circular(6),
@@ -4181,14 +4656,14 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
                     children: [
                       Icon(
                         task.attachments.isNotEmpty ? Icons.image_rounded : Icons.attach_file_rounded,
-                        size: 13,
+                        size: 15,
                         color: task.attachments.isNotEmpty ? const Color(0xFF2563EB) : const Color(0xFF64748B),
                       ),
-                      const SizedBox(width: 4),
+                      const SizedBox(width: 5),
                       Text(
                         task.attachments.isNotEmpty ? '${task.attachments.length} files' : '+ Attach',
                         style: GoogleFonts.jetBrainsMono(
-                          fontSize: 10,
+                          fontSize: 11.5,
                           fontWeight: FontWeight.w600,
                           color: task.attachments.isNotEmpty ? const Color(0xFF1D4ED8) : const Color(0xFF64748B),
                         ),
@@ -4199,17 +4674,18 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
               ),
             ),
           ),
+          const SizedBox(width: 12),
 
           // STATUS PILL
           SizedBox(
-            width: 140,
+            width: 135,
             child: Align(
               alignment: Alignment.centerLeft,
               child: InkWell(
                 borderRadius: BorderRadius.circular(6),
                 onTap: () => _openUpdateStatusDialog(task),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(
                     color: task.status.bgColor,
                     borderRadius: BorderRadius.circular(6),
@@ -4218,19 +4694,19 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Container(
-                        width: 5,
-                        height: 5,
+                        width: 6,
+                        height: 6,
                         decoration: BoxDecoration(
                           color: task.status.dotColor,
                           shape: BoxShape.circle,
                         ),
                       ),
-                      const SizedBox(width: 5),
+                      const SizedBox(width: 6),
                       Flexible(
                         child: Text(
                           task.status.label,
                           style: GoogleFonts.jetBrainsMono(
-                            fontSize: 10,
+                            fontSize: 11.5,
                             fontWeight: FontWeight.w600,
                             color: task.status.textColor,
                           ),
@@ -4243,17 +4719,18 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
               ),
             ),
           ),
+          const SizedBox(width: 12),
 
           // TIME WINDOW / TOTAL
           SizedBox(
-            width: 155,
+            width: 165,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
                   task.timeWindow,
                   style: GoogleFonts.jetBrainsMono(
-                    fontSize: 11,
+                    fontSize: 12.5,
                     fontWeight: FontWeight.w600,
                     color: const Color(0xFF1E293B),
                   ),
@@ -4262,8 +4739,8 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
                 Text(
                   task.timeLogged,
                   style: GoogleFonts.jetBrainsMono(
-                    fontSize: 10,
-                    color: const Color(0xFF94A3B8),
+                    fontSize: 11.5,
+                    color: const Color(0xFF64748B),
                   ),
                 ),
               ],
@@ -4276,7 +4753,7 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
             child: Align(
               alignment: Alignment.centerRight,
               child: PopupMenuButton<String>(
-                icon: const Icon(Icons.more_vert, size: 18, color: Color(0xFF64748B)),
+                icon: const Icon(Icons.more_vert, size: 20, color: Color(0xFF64748B)),
                 tooltip: 'Task Actions',
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 elevation: 4,

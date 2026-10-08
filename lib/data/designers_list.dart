@@ -16,7 +16,7 @@ final List<Designer> designers = [
   ),
 
   Designer(
-    name: 'Muhammed Nizam',
+    name: 'Muhd. Nizam',
     imagePath: 'assets/img/nizam_img.jpg',
     designation: 'Graphic Designer',
     description: 'Creates branding and visual design systems.',

@@ -31,7 +31,7 @@ class _StudioTrackAppState extends State<StudioTrackApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'StudioTrack',
+      title: 'Design Media Studio',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,
