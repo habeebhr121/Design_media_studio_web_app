@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "789766295190",
+    "project_id": "studio-track-601cd",
+    "storage_bucket": "studio-track-601cd.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:789766295190:android:35800f727176955d467cb7",
+        "android_client_info": {
+          "package_name": "com.example.studio_track"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDk_OrXF4QFmzVSTScZVv1610FsOZKW4jQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

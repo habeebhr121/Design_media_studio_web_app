@@ -21,25 +21,13 @@ class DefaultFirebaseOptions {
     }
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for android - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
+        return android;
       case TargetPlatform.iOS:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for ios - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
+        return ios;
       case TargetPlatform.macOS:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for macos - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
+        return macos;
       case TargetPlatform.windows:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for windows - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
+        return windows;
       case TargetPlatform.linux:
         throw UnsupportedError(
           'DefaultFirebaseOptions have not been configured for linux - '
@@ -60,5 +48,41 @@ class DefaultFirebaseOptions {
     authDomain: 'studio-track-601cd.firebaseapp.com',
     storageBucket: 'studio-track-601cd.firebasestorage.app',
     measurementId: 'G-CQ2S6BP4W1',
+  );
+
+  static const FirebaseOptions android = FirebaseOptions(
+    apiKey: 'AIzaSyDk_OrXF4QFmzVSTScZVv1610FsOZKW4jQ',
+    appId: '1:789766295190:android:35800f727176955d467cb7',
+    messagingSenderId: '789766295190',
+    projectId: 'studio-track-601cd',
+    storageBucket: 'studio-track-601cd.firebasestorage.app',
+  );
+
+  static const FirebaseOptions ios = FirebaseOptions(
+    apiKey: 'AIzaSyDHCkeHbg3-UVZhZIeJl8jX9Ex0sPWhc-I',
+    appId: '1:789766295190:ios:bb561348493d1da0467cb7',
+    messagingSenderId: '789766295190',
+    projectId: 'studio-track-601cd',
+    storageBucket: 'studio-track-601cd.firebasestorage.app',
+    iosBundleId: 'com.example.studioTrack',
+  );
+
+  static const FirebaseOptions macos = FirebaseOptions(
+    apiKey: 'AIzaSyDHCkeHbg3-UVZhZIeJl8jX9Ex0sPWhc-I',
+    appId: '1:789766295190:ios:bb561348493d1da0467cb7',
+    messagingSenderId: '789766295190',
+    projectId: 'studio-track-601cd',
+    storageBucket: 'studio-track-601cd.firebasestorage.app',
+    iosBundleId: 'com.example.studioTrack',
+  );
+
+  static const FirebaseOptions windows = FirebaseOptions(
+    apiKey: 'AIzaSyBVIFkF_JkCrjUPuz8skbthqHLrg0OG-fE',
+    appId: '1:789766295190:web:5f051491846b46e9467cb7',
+    messagingSenderId: '789766295190',
+    projectId: 'studio-track-601cd',
+    authDomain: 'studio-track-601cd.firebaseapp.com',
+    storageBucket: 'studio-track-601cd.firebasestorage.app',
+    measurementId: 'G-NDC5N4Y7C1',
   );
 }

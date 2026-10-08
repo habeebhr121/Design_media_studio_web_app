@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:studio_track/data/designers_list.dart';
 
 class LoginScreen extends StatefulWidget {
   final VoidCallback onLoginSuccess;
@@ -16,40 +17,45 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final TextEditingController _emailCtrl =
-      TextEditingController(text: 'elena.v@studiotrack.design');
+  late final TextEditingController _emailCtrl = TextEditingController(
+    text: designers.isNotEmpty
+        ? '${designers.first.name.toLowerCase().replaceAll(' ', '.')}@studiotrack.design'
+        : 'jawad@studiotrack.design',
+  );
   final TextEditingController _passwordCtrl =
       TextEditingController(text: '••••••••••••••••••••');
   bool _obscurePassword = true;
   bool _keepMeSignedIn = true;
-  String _selectedMember = 'Elena';
+  late String _selectedMember = designers.isNotEmpty
+      ? designers.first.name.split(' ').first
+      : 'Jawad';
 
-  final List<Map<String, String>> _teamMembers = [
+  late final List<Map<String, String>> _teamMembers = [
     {
-      'name': 'Elena',
-      'initials': 'EV',
-      'email': 'elena.v@studiotrack.design',
+      'name': 'Jawad',
+      'initials': 'JW',
+      'email': 'jawad@studiotrack.design',
       'bg': '0xFFE0E7FF',
       'fg': '0xFF4338CA',
     },
     {
-      'name': 'Marcus',
-      'initials': 'MT',
-      'email': 'marcus.c@studiotrack.design',
+      'name': 'Sabith',
+      'initials': 'SA',
+      'email': 'sabith.amjad@studiotrack.design',
       'bg': '0xFFE2E8F0',
       'fg': '0xFF334155',
     },
     {
-      'name': 'Maya',
-      'initials': 'MC',
-      'email': 'maya.p@studiotrack.design',
+      'name': 'Nizam',
+      'initials': 'NZ',
+      'email': 'nizam@studiotrack.design',
       'bg': '0xFFEDE9FE',
       'fg': '0xFF6D28D9',
     },
     {
-      'name': 'Liam',
-      'initials': 'LK',
-      'email': 'liam.v@studiotrack.design',
+      'name': 'Sam',
+      'initials': 'SM',
+      'email': 'sam@studiotrack.design',
       'bg': '0xFFE0F2FE',
       'fg': '0xFF0369A1',
     },
