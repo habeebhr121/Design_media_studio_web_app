@@ -373,8 +373,8 @@ class _HoursReportScreenState extends State<HoursReportScreen> {
                         ),
                       ),
                       const SizedBox(height: 48),
-                      _buildFooter(isNarrow: isNarrow),
-                      const SizedBox(height: 24),
+                      // _buildFooter(isNarrow: isNarrow),
+                      // const SizedBox(height: 24),
                     ],
                   ),
                 );
@@ -1730,53 +1730,48 @@ class _HoursReportScreenState extends State<HoursReportScreen> {
 
   // --- FOOTER ---
   Widget _buildFooter({required bool isNarrow}) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Text(
-              'Architectural Precision • Minimalist Studio Operations',
-              textAlign: TextAlign.center,
-              style: GoogleFonts.jetBrainsMono(
-                fontSize: 10.5,
-                color: const Color(0xFF94A3B8),
-              ),
+    if (isNarrow) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'StudioTrack • Atelier Core v1.4',
+            style: GoogleFonts.jetBrainsMono(
+              fontSize: 11,
+              color: const Color(0xFF94A3B8),
             ),
-            const SizedBox(height: 6),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // Container(
-                //   width: 6,
-                //   height: 6,
-                //   decoration: const BoxDecoration(
-                //     color: Color(0xFF4F46E5),
-                //     shape: BoxShape.circle,
-                //   ),
-                // ),
-                const SizedBox(width: 8),
-                Flexible(
-                  child: Text(
-                    'Design Media Studio • Atelier Core v1.4 • Organized & Built by Habeeb Rahman (habeebhr121@gmail.com)',
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.jetBrainsMono(
-                      fontSize: 11.5,
-                      fontWeight: FontWeight.w500,
-                      color: const Color.fromARGB(70, 100, 116, 139),
-                    ),
-                  ),
-                ),
-              ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Architectural Precision • Minimalist Workflow',
+            style: GoogleFonts.jetBrainsMono(
+              fontSize: 11,
+              color: const Color(0xFF94A3B8),
             ),
-            
-            
-          ],
+          ),
+        ],
+      );
+    }
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          'StudioTrack • Atelier Core v1.4',
+          style: GoogleFonts.jetBrainsMono(
+            fontSize: 11,
+            color: const Color(0xFF94A3B8),
+          ),
         ),
-      ),
+        Text(
+          'Architectural Precision • Minimalist Workflow',
+          style: GoogleFonts.jetBrainsMono(
+            fontSize: 11,
+            color: const Color(0xFF94A3B8),
+          ),
+        ),
+      ],
     );
   }
-}
+  }
+

@@ -788,7 +788,7 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
                             children: task.attachments.map((att) {
                               return InkWell(
                                 borderRadius: BorderRadius.circular(6),
-                                onTap: () => _openAttachDialog(task),
+                                onTap: () => _openAttachmentPreviewDialog(att),
                                 child: Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                                   decoration: BoxDecoration(
@@ -809,6 +809,8 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
                                           color: const Color(0xFF1D4ED8),
                                         ),
                                       ),
+                                      const SizedBox(width: 6),
+                                      const Icon(Icons.zoom_in_rounded, size: 13, color: Color(0xFF3B82F6)),
                                     ],
                                   ),
                                 ),
@@ -2011,7 +2013,7 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
   }
 
   Widget _buildAttachmentThumbnail(TaskAttachment att) {
-    if (att.bytes != null) {
+    if (att.bytes != null && att.bytes!.isNotEmpty) {
       return Image.memory(
         att.bytes!,
         width: double.infinity,
@@ -2072,6 +2074,232 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  // --- FULLSCREEN ATTACHMENT / IMAGE PREVIEW MODAL ---
+  void _openAttachmentPreviewDialog(TaskAttachment att) {
+    final ext = att.name.contains('.') ? att.name.split('.').last.toUpperCase() : 'FILE';
+    final isImage = ['PNG', 'JPG', 'JPEG', 'WEBP', 'GIF', 'SVG', 'BMP', 'ICO'].contains(ext) || att.imageUrl.isNotEmpty || (att.bytes != null && att.bytes!.isNotEmpty);
+
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 950, maxHeight: 750),
+            decoration: BoxDecoration(
+              color: const Color(0xFF0F172A),
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x66000000),
+                  blurRadius: 30,
+                  offset: Offset(0, 10),
+                ),
+              ],
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Header Bar
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                  color: const Color(0xFF1E293B),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF334155),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Icon(
+                          isImage ? Icons.image_outlined : Icons.insert_drive_file_outlined,
+                          size: 18,
+                          color: const Color(0xFF93C5FD),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              att.name,
+                              style: GoogleFonts.inter(
+                                fontSize: 14.5,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              '${att.fileSize} • Uploaded ${att.uploadedAt}',
+                              style: GoogleFonts.jetBrainsMono(
+                                fontSize: 11,
+                                color: const Color(0xFF94A3B8),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF334155),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          ext,
+                          style: GoogleFonts.jetBrainsMono(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w700,
+                            color: const Color(0xFFE2E8F0),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      IconButton(
+                        onPressed: () => Navigator.pop(ctx),
+                        icon: const Icon(Icons.close, size: 20, color: Color(0xFFCBD5E1)),
+                        splashRadius: 20,
+                        tooltip: 'Close Preview',
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Main Content View Area
+                Expanded(
+                  child: Container(
+                    color: const Color(0xFF020617),
+                    alignment: Alignment.center,
+                    child: isImage
+                        ? InteractiveViewer(
+                            panEnabled: true,
+                            minScale: 0.5,
+                            maxScale: 4.0,
+                            child: Center(
+                              child: _buildFullAttachmentImage(att),
+                            ),
+                          )
+                        : _buildNonImageFilePreview(att, ext),
+                  ),
+                ),
+
+                // Footer Bar
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  color: const Color(0xFF1E293B),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        isImage ? 'Pinch or scroll to zoom • Drag to pan' : 'Document deliverable',
+                        style: GoogleFonts.jetBrainsMono(
+                          fontSize: 11,
+                          color: const Color(0xFF64748B),
+                        ),
+                      ),
+                      ElevatedButton.icon(
+                        onPressed: () => Navigator.pop(ctx),
+                        icon: const Icon(Icons.check_rounded, size: 15),
+                        label: Text(
+                          'Close',
+                          style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF3B82F6),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                          elevation: 0,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildFullAttachmentImage(TaskAttachment att) {
+    if (att.bytes != null && att.bytes!.isNotEmpty) {
+      return Image.memory(
+        att.bytes!,
+        fit: BoxFit.contain,
+        errorBuilder: (context, error, stackTrace) => _buildFallbackAttachmentIcon(att.name),
+      );
+    }
+    if (!kIsWeb && att.localPath != null && att.localPath!.isNotEmpty) {
+      return Image.file(
+        File(att.localPath!),
+        fit: BoxFit.contain,
+        errorBuilder: (context, error, stackTrace) => _buildFallbackAttachmentIcon(att.name),
+      );
+    }
+    if (att.imageUrl.isNotEmpty) {
+      return Image.network(
+        att.imageUrl,
+        fit: BoxFit.contain,
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return const Center(
+            child: CircularProgressIndicator(color: Color(0xFF3B82F6)),
+          );
+        },
+        errorBuilder: (context, error, stackTrace) => _buildFallbackAttachmentIcon(att.name),
+      );
+    }
+    return _buildFallbackAttachmentIcon(att.name);
+  }
+
+  Widget _buildNonImageFilePreview(TaskAttachment att, String ext) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: const Color(0xFF1E293B),
+            shape: BoxShape.circle,
+            border: Border.all(color: const Color(0xFF334155)),
+          ),
+          child: const Icon(
+            Icons.insert_drive_file_outlined,
+            size: 56,
+            color: Color(0xFF94A3B8),
+          ),
+        ),
+        const SizedBox(height: 16),
+        Text(
+          att.name,
+          style: GoogleFonts.inter(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            color: Colors.white,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          '$ext Document • ${att.fileSize}',
+          style: GoogleFonts.jetBrainsMono(
+            fontSize: 12,
+            color: const Color(0xFF94A3B8),
+          ),
+        ),
+      ],
     );
   }
 
@@ -2369,38 +2597,76 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
                                   final att = task.attachments[index];
                                   return Stack(
                                     children: [
-                                      Container(
-                                        width: 160,
-                                        decoration: BoxDecoration(
-                                          borderRadius: BorderRadius.circular(8),
-                                          border: Border.all(color: const Color(0xFFE2E8F0)),
-                                        ),
-                                        clipBehavior: Clip.antiAlias,
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Expanded(
-                                              child: _buildAttachmentThumbnail(att),
+                                      InkWell(
+                                        onTap: () => _openAttachmentPreviewDialog(att),
+                                        borderRadius: BorderRadius.circular(8),
+                                        child: Tooltip(
+                                          message: 'Click to view / inspect full image',
+                                          child: Container(
+                                            width: 160,
+                                            decoration: BoxDecoration(
+                                              borderRadius: BorderRadius.circular(8),
+                                              border: Border.all(color: const Color(0xFFE2E8F0)),
                                             ),
-                                            Container(
-                                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                                              color: Colors.white,
-                                              child: Column(
-                                                crossAxisAlignment: CrossAxisAlignment.start,
-                                                children: [
-                                                  Text(
-                                                    att.name,
-                                                    style: GoogleFonts.inter(fontSize: 10.5, fontWeight: FontWeight.w600, color: const Color(0xFF0F172A)),
-                                                    overflow: TextOverflow.ellipsis,
+                                            clipBehavior: Clip.antiAlias,
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Expanded(
+                                                  child: Stack(
+                                                    fit: StackFit.expand,
+                                                    children: [
+                                                      _buildAttachmentThumbnail(att),
+                                                      Positioned(
+                                                        bottom: 5,
+                                                        left: 5,
+                                                        child: Container(
+                                                          padding: const EdgeInsets.all(3),
+                                                          decoration: BoxDecoration(
+                                                            color: Colors.black.withValues(alpha: 0.6),
+                                                            borderRadius: BorderRadius.circular(4),
+                                                          ),
+                                                          child: const Row(
+                                                            mainAxisSize: MainAxisSize.min,
+                                                            children: [
+                                                              Icon(Icons.zoom_in_rounded, size: 12, color: Colors.white),
+                                                              SizedBox(width: 2),
+                                                              Text(
+                                                                'View',
+                                                                style: TextStyle(
+                                                                  color: Colors.white,
+                                                                  fontSize: 9,
+                                                                  fontWeight: FontWeight.w600,
+                                                                ),
+                                                              ),
+                                                            ],
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ],
                                                   ),
-                                                  Text(
-                                                    '${att.fileSize} • ${att.uploadedAt}',
-                                                    style: GoogleFonts.jetBrainsMono(fontSize: 9, color: const Color(0xFF94A3B8)),
+                                                ),
+                                                Container(
+                                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                                                  color: Colors.white,
+                                                  child: Column(
+                                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                                    children: [
+                                                      Text(
+                                                        att.name,
+                                                        style: GoogleFonts.inter(fontSize: 10.5, fontWeight: FontWeight.w600, color: const Color(0xFF0F172A)),
+                                                        overflow: TextOverflow.ellipsis,
+                                                      ),
+                                                      Text(
+                                                        '${att.fileSize} • ${att.uploadedAt}',
+                                                        style: GoogleFonts.jetBrainsMono(fontSize: 9, color: const Color(0xFF94A3B8)),
+                                                      ),
+                                                    ],
                                                   ),
-                                                ],
-                                              ),
+                                                ),
+                                              ],
                                             ),
-                                          ],
+                                          ),
                                         ),
                                       ),
                                       Positioned(
@@ -3536,8 +3802,8 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
                       const SizedBox(height: 28),
                       _buildBottomAnalyticsRow(isNarrow: isNarrow),
                       const SizedBox(height: 48),
-                      _buildFooter(isNarrow: isNarrow),
-                      const SizedBox(height: 24),
+                      // _buildFooter(isNarrow: isNarrow),
+                      // const SizedBox(height: 24),
                     ],
                   ),
                 );
