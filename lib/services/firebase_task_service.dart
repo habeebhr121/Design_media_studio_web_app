@@ -1,8 +1,66 @@
+import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
 import 'package:studio_track/data/dummy_data.dart';
 import 'package:studio_track/screens/studio_workboard_screen.dart';
+
+class AttachmentBytesCache {
+  static final Map<String, Uint8List> _cache = {};
+
+  static void put(String key, Uint8List bytes) {
+    if (key.isNotEmpty) {
+      _cache[key] = bytes;
+    }
+  }
+
+  static Uint8List? get(String key) {
+    if (key.isEmpty) return null;
+    return _cache[key];
+  }
+
+  static Future<Uint8List?> getOrFetch(TaskAttachment att) async {
+    if (att.bytes != null && att.bytes!.isNotEmpty) {
+      put(att.id, att.bytes!);
+      if (att.imageUrl.isNotEmpty) put(att.imageUrl, att.bytes!);
+      put(att.name, att.bytes!);
+      return att.bytes;
+    }
+
+    final cached = get(att.id) ?? get(att.imageUrl) ?? get(att.name);
+    if (cached != null && cached.isNotEmpty) {
+      return cached;
+    }
+
+    if (att.imageUrl.startsWith('data:image')) {
+      try {
+        final base64Str = att.imageUrl.contains(',') ? att.imageUrl.split(',').last : att.imageUrl;
+        final decoded = base64Decode(base64Str);
+        put(att.id, decoded);
+        put(att.imageUrl, decoded);
+        return decoded;
+      } catch (_) {}
+    }
+
+    if (att.imageUrl.contains('firebasestorage.googleapis.com') || att.imageUrl.startsWith('gs://')) {
+      try {
+        final ref = FirebaseStorage.instance.refFromURL(att.imageUrl);
+        final bytes = await ref.getData(5 * 1024 * 1024);
+        if (bytes != null && bytes.isNotEmpty) {
+          put(att.id, bytes);
+          put(att.imageUrl, bytes);
+          put(att.name, bytes);
+          return bytes;
+        }
+      } catch (e) {
+        debugPrint('Firebase Storage ref.getData notice: $e');
+      }
+    }
+
+    return null;
+  }
+}
 
 class FirebaseTaskService {
   static final FirebaseTaskService _instance = FirebaseTaskService._internal();
@@ -52,6 +110,7 @@ class FirebaseTaskService {
         'id': att.id,
         'name': att.name,
         'imageUrl': att.imageUrl,
+        'thumbnailData': att.thumbnailData,
         'fileSize': att.fileSize,
         'uploadedAt': att.uploadedAt,
         'localPath': att.localPath ?? '',
@@ -75,17 +134,24 @@ class FirebaseTaskService {
       }
     }
 
-    // Parse Attachments
+    // Parse Attachments with cached bytes restore
     final rawAttachments = data['attachments'] as List<dynamic>? ?? [];
     final attachments = rawAttachments.map((item) {
       final m = item as Map<String, dynamic>;
+      final attId = m['id'] as String? ?? UniqueKey().toString();
+      final attName = m['name'] as String? ?? 'Attachment';
+      final attUrl = m['imageUrl'] as String? ?? '';
+      final attThumb = m['thumbnailData'] as String? ?? '';
+      final cachedBytes = AttachmentBytesCache.get(attId) ?? AttachmentBytesCache.get(attUrl) ?? AttachmentBytesCache.get(attName);
       return TaskAttachment(
-        id: m['id'] as String? ?? UniqueKey().toString(),
-        name: m['name'] as String? ?? 'Attachment',
-        imageUrl: m['imageUrl'] as String? ?? '',
+        id: attId,
+        name: attName,
+        imageUrl: attUrl,
+        thumbnailData: attThumb,
         fileSize: m['fileSize'] as String? ?? '',
         uploadedAt: m['uploadedAt'] as String? ?? '',
         localPath: m['localPath'] as String?,
+        bytes: cachedBytes,
       );
     }).toList();
 
@@ -265,6 +331,84 @@ class FirebaseTaskService {
       debugPrint('Task $taskId deleted from Firestore.');
     } catch (e) {
       debugPrint('Error deleting task from Firestore: $e');
+    }
+  }
+
+  /// Deletes a file from Firebase Storage
+  Future<void> deleteAttachmentFile(String imageUrl) async {
+    if (imageUrl.isEmpty) return;
+    try {
+      if (_isFirebaseAvailable &&
+          (imageUrl.contains('firebasestorage.googleapis.com') || imageUrl.startsWith('gs://'))) {
+        final storage = FirebaseStorage.instance;
+        final ref = storage.refFromURL(imageUrl);
+        await ref.delete();
+        debugPrint('Attachment file deleted from Firebase Storage: $imageUrl');
+      }
+    } catch (e) {
+      debugPrint('Notice/Error deleting file from Firebase Storage: $e');
+    }
+  }
+
+  /// Uploads an attachment file to Firebase Storage and returns its download URL (or Base64 fallback)
+  Future<String> uploadAttachmentFile({
+    required String taskId,
+    required String fileName,
+    required Uint8List bytes,
+  }) async {
+    AttachmentBytesCache.put(fileName, bytes);
+
+    final ext = fileName.contains('.') ? fileName.split('.').last.toLowerCase() : 'png';
+    String contentType = 'application/octet-stream';
+    if (ext == 'png') {
+      contentType = 'image/png';
+    } else if (ext == 'jpg' || ext == 'jpeg') {
+      contentType = 'image/jpeg';
+    } else if (ext == 'webp') {
+      contentType = 'image/webp';
+    } else if (ext == 'gif') {
+      contentType = 'image/gif';
+    } else if (ext == 'svg') {
+      contentType = 'image/svg+xml';
+    } else if (ext == 'pdf') {
+      contentType = 'application/pdf';
+    }
+
+    try {
+      if (_isFirebaseAvailable) {
+        final storage = FirebaseStorage.instance;
+        final timestamp = DateTime.now().millisecondsSinceEpoch;
+        final cleanFileName = fileName.replaceAll(RegExp(r'[^a-zA-Z0-9._-]'), '_');
+        final storageRef = storage
+            .ref()
+            .child('task_attachments')
+            .child(taskId.isNotEmpty ? taskId : 'general')
+            .child('${timestamp}_$cleanFileName');
+
+        final metadata = SettableMetadata(
+          contentType: contentType,
+          customMetadata: {'originalName': fileName},
+        );
+
+        final uploadTask = await storageRef.putData(bytes, metadata);
+        final downloadUrl = await uploadTask.ref.getDownloadURL();
+        AttachmentBytesCache.put(downloadUrl, bytes);
+        debugPrint('File $fileName successfully uploaded to Firebase Storage: $downloadUrl');
+        return downloadUrl;
+      }
+    } catch (e) {
+      debugPrint('Firebase Storage upload notice/fallback: $e');
+    }
+
+    // High-reliability Fallback (stores as base64 data URI if storage offline or rules pending)
+    try {
+      final b64 = base64Encode(bytes);
+      final dataUri = 'data:$contentType;base64,$b64';
+      AttachmentBytesCache.put(dataUri, bytes);
+      return dataUri;
+    } catch (e) {
+      debugPrint('Base64 encoding error: $e');
+      return '';
     }
   }
 }

@@ -82,4 +82,3 @@ class _StudioTrackAppState extends State<StudioTrackApp> {
     }
   }
 }
-

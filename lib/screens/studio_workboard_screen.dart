@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io' show File;
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -8,6 +9,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:studio_track/data/designers_list.dart';
 import 'package:studio_track/data/dummy_data.dart';
 import 'package:studio_track/services/firebase_task_service.dart';
+import 'package:studio_track/utils/web_image_resizer.dart';
 
 // --- DATA MODELS ---
 
@@ -28,7 +30,8 @@ enum TaskStatus {
 class TaskAttachment {
   final String id;
   final String name;
-  final String imageUrl;
+  String imageUrl;
+  String thumbnailData;
   final String fileSize;
   final String uploadedAt;
   final String? localPath;
@@ -38,6 +41,7 @@ class TaskAttachment {
     required this.id,
     required this.name,
     this.imageUrl = '',
+    this.thumbnailData = '',
     required this.fileSize,
     required this.uploadedAt,
     this.localPath,
@@ -2022,26 +2026,109 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
     );
   }
 
+  Future<String> _generateThumbnailData(Uint8List bytes, String fileName) async {
+    final ext = fileName.contains('.') ? fileName.split('.').last.toLowerCase() : 'png';
+    final isImage = ['png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp'].contains(ext);
+    if (!isImage) return '';
+
+    try {
+      final resized = await resizeImageToThumbnail(bytes, maxDimension: 280);
+      if (resized.isNotEmpty) return resized;
+    } catch (_) {}
+
+    // Fallback if image is under 400 KB
+    if (bytes.length <= 400 * 1024) {
+      final mime = (ext == 'jpg' || ext == 'jpeg') ? 'image/jpeg' : 'image/$ext';
+      return 'data:$mime;base64,${base64Encode(bytes)}';
+    }
+
+    return '';
+  }
+
+  String _getWebSafeImageUrl(String url, {int? width}) {
+    if (url.isEmpty) return '';
+    if (url.startsWith('data:image')) return url;
+
+    // For Firebase Storage or Google Cloud Storage URLs on Flutter Web,
+    // wsrv.nl acts as a Cloudflare-backed proxy with Access-Control-Allow-Origin: *
+    if (kIsWeb && (url.contains('firebasestorage.googleapis.com') || url.contains('googleapis.com'))) {
+      final encoded = Uri.encodeComponent(url);
+      if (width != null) {
+        return 'https://wsrv.nl/?url=$encoded&w=$width&q=85&output=webp';
+      }
+      return 'https://wsrv.nl/?url=$encoded';
+    }
+    return url;
+  }
+
   Widget _buildAttachmentThumbnail(TaskAttachment att) {
-    if (att.bytes != null && att.bytes!.isNotEmpty) {
+    final immediateBytes = att.bytes ??
+        AttachmentBytesCache.get(att.id) ??
+        AttachmentBytesCache.get(att.imageUrl) ??
+        AttachmentBytesCache.get(att.name);
+
+    if (immediateBytes != null && immediateBytes.isNotEmpty) {
       return Image.memory(
-        att.bytes!,
+        immediateBytes,
         width: double.infinity,
         fit: BoxFit.cover,
         errorBuilder: (context, error, stackTrace) => _buildFallbackAttachmentIcon(att.name),
       );
     }
+
+    final dataUri = att.thumbnailData.isNotEmpty
+        ? att.thumbnailData
+        : (att.imageUrl.startsWith('data:image') ? att.imageUrl : '');
+    if (dataUri.isNotEmpty) {
+      try {
+        final base64Str = dataUri.contains(',') ? dataUri.split(',').last : dataUri;
+        final decoded = base64Decode(base64Str);
+        AttachmentBytesCache.put(att.id, decoded);
+        return Image.memory(
+          decoded,
+          width: double.infinity,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) => _buildFallbackAttachmentIcon(att.name),
+        );
+      } catch (_) {}
+    }
+
+    if (att.imageUrl.isNotEmpty) {
+      final safeUrl = _getWebSafeImageUrl(att.imageUrl, width: 300);
+      return Image.network(
+        safeUrl,
+        width: double.infinity,
+        fit: BoxFit.cover,
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return Container(
+            color: const Color(0xFFF1F5F9),
+            child: const Center(
+              child: SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF3B82F6)),
+              ),
+            ),
+          );
+        },
+        errorBuilder: (context, error, stackTrace) {
+          if (safeUrl != att.imageUrl) {
+            return Image.network(
+              att.imageUrl,
+              width: double.infinity,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) => _buildFallbackAttachmentIcon(att.name),
+            );
+          }
+          return _buildFallbackAttachmentIcon(att.name);
+        },
+      );
+    }
+
     if (!kIsWeb && att.localPath != null && att.localPath!.isNotEmpty) {
       return Image.file(
         File(att.localPath!),
-        width: double.infinity,
-        fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) => _buildFallbackAttachmentIcon(att.name),
-      );
-    }
-    if (att.imageUrl.isNotEmpty) {
-      return Image.network(
-        att.imageUrl,
         width: double.infinity,
         fit: BoxFit.cover,
         errorBuilder: (context, error, stackTrace) => _buildFallbackAttachmentIcon(att.name),
@@ -2245,23 +2332,38 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
   }
 
   Widget _buildFullAttachmentImage(TaskAttachment att) {
-    if (att.bytes != null && att.bytes!.isNotEmpty) {
+    final immediateBytes = att.bytes ??
+        AttachmentBytesCache.get(att.id) ??
+        AttachmentBytesCache.get(att.imageUrl) ??
+        AttachmentBytesCache.get(att.name);
+
+    if (immediateBytes != null && immediateBytes.isNotEmpty) {
       return Image.memory(
-        att.bytes!,
+        immediateBytes,
         fit: BoxFit.contain,
         errorBuilder: (context, error, stackTrace) => _buildFallbackAttachmentIcon(att.name),
       );
     }
-    if (!kIsWeb && att.localPath != null && att.localPath!.isNotEmpty) {
-      return Image.file(
-        File(att.localPath!),
-        fit: BoxFit.contain,
-        errorBuilder: (context, error, stackTrace) => _buildFallbackAttachmentIcon(att.name),
-      );
+    final dataUri = att.thumbnailData.isNotEmpty
+        ? att.thumbnailData
+        : (att.imageUrl.startsWith('data:image') ? att.imageUrl : '');
+    if (dataUri.isNotEmpty) {
+      try {
+        final base64Str = dataUri.contains(',') ? dataUri.split(',').last : dataUri;
+        final decoded = base64Decode(base64Str);
+        AttachmentBytesCache.put(att.id, decoded);
+        return Image.memory(
+          decoded,
+          fit: BoxFit.contain,
+          errorBuilder: (context, error, stackTrace) => _buildFallbackAttachmentIcon(att.name),
+        );
+      } catch (_) {}
     }
+
     if (att.imageUrl.isNotEmpty) {
+      final safeUrl = _getWebSafeImageUrl(att.imageUrl);
       return Image.network(
-        att.imageUrl,
+        safeUrl,
         fit: BoxFit.contain,
         loadingBuilder: (context, child, loadingProgress) {
           if (loadingProgress == null) return child;
@@ -2269,6 +2371,22 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
             child: CircularProgressIndicator(color: Color(0xFF3B82F6)),
           );
         },
+        errorBuilder: (context, error, stackTrace) {
+          if (safeUrl != att.imageUrl) {
+            return Image.network(
+              att.imageUrl,
+              fit: BoxFit.contain,
+              errorBuilder: (context, error, stackTrace) => _buildFallbackAttachmentIcon(att.name),
+            );
+          }
+          return _buildFallbackAttachmentIcon(att.name);
+        },
+      );
+    }
+    if (!kIsWeb && att.localPath != null && att.localPath!.isNotEmpty) {
+      return Image.file(
+        File(att.localPath!),
+        fit: BoxFit.contain,
         errorBuilder: (context, error, stackTrace) => _buildFallbackAttachmentIcon(att.name),
       );
     }
@@ -2334,7 +2452,7 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
 
     Future<void> pickFilesFromDevice(void Function(void Function()) setDialogState) async {
       try {
-        const int maxAttachmentBytes = 10 * 1024 * 1024; // 10 MB Limit
+        const int maxAttachmentBytes = 3 * 1024 * 1024; // 3 MB Limit
 
         final result = await FilePickerPlatform.instance.pickFiles(
           type: FileType.custom,
@@ -2347,7 +2465,7 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
             int fileSize = 0;
             try {
               fileBytes = await file.readAsBytes();
-              fileSize = (await file.length()) ?? 0;
+              fileSize = (await file.length()) ?? (fileBytes.length);
             } catch (_) {
               if (file.path != null && !kIsWeb) {
                 final ioFile = File(file.path!);
@@ -2369,7 +2487,7 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            'File "${file.name}" exceeds the 10 MB limit ($sizeMb MB).',
+                            'File "${file.name}" exceeds the 3 MB limit ($sizeMb MB). Please select an image under 3 MB.',
                           ),
                         ),
                       ],
@@ -2394,19 +2512,53 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
             final minute = now.minute.toString().padLeft(2, '0');
             final timeStr = '$hour:$minute $ampm';
 
+            String thumbData = '';
+            if (fileBytes != null && fileBytes.isNotEmpty) {
+              thumbData = await _generateThumbnailData(fileBytes, file.name);
+            }
+
+            final newAtt = TaskAttachment(
+              id: '${DateTime.now().millisecondsSinceEpoch}_${file.name}',
+              name: file.name,
+              imageUrl: '',
+              thumbnailData: thumbData,
+              localPath: file.path,
+              bytes: fileBytes,
+              fileSize: formattedSize,
+              uploadedAt: timeStr,
+            );
+
+            if (fileBytes != null && fileBytes.isNotEmpty) {
+              AttachmentBytesCache.put(newAtt.id, fileBytes);
+              AttachmentBytesCache.put(file.name, fileBytes);
+            }
+
             setDialogState(() {
-              task.attachments.add(
-                TaskAttachment(
-                  id: '${DateTime.now().millisecondsSinceEpoch}_${file.name}',
-                  name: file.name,
-                  imageUrl: '',
-                  localPath: file.path,
-                  bytes: fileBytes,
-                  fileSize: formattedSize,
-                  uploadedAt: timeStr,
-                ),
-              );
+              task.attachments.add(newAtt);
             });
+            FirebaseTaskService().updateTask(task);
+            setState(() {});
+
+            // Upload directly to Firebase Storage backend and sync URL with Firestore
+            if (fileBytes != null && fileBytes.isNotEmpty) {
+              FirebaseTaskService()
+                  .uploadAttachmentFile(
+                    taskId: task.id,
+                    fileName: file.name,
+                    bytes: fileBytes,
+                  )
+                  .then((uploadedUrl) {
+                    if (uploadedUrl.isNotEmpty) {
+                      newAtt.imageUrl = uploadedUrl;
+                      AttachmentBytesCache.put(uploadedUrl, fileBytes!);
+                      FirebaseTaskService().updateTask(task);
+                      if (mounted) {
+                        setDialogState(() {});
+                        setState(() {});
+                      }
+                    }
+                  });
+            }
           }
           setState(() {});
         }
@@ -2438,7 +2590,7 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
                             child: Row(
                               children: [
                                 Container(
-                                  padding: const EdgeInsets.all(8),
+                                   padding: const EdgeInsets.all(8),
                                   decoration: BoxDecoration(
                                     color: const Color(0xFFEEF2FF),
                                     borderRadius: BorderRadius.circular(8),
@@ -2519,7 +2671,7 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
                               ),
                               const SizedBox(height: 2),
                               Text(
-                                'Supports PNG, JPG, JPEG, SVG, PDF, PSD, AI, FIG, MP4 up to 10 MB',
+                                'Supports PNG, JPG, JPEG, SVG, PDF, PSD, AI, FIG, MP4 up to 3 MB',
                                 style: GoogleFonts.jetBrainsMono(
                                   fontSize: 10,
                                   color: const Color(0xFF94A3B8),
@@ -2684,9 +2836,10 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
                                         right: 4,
                                         child: InkWell(
                                           onTap: () {
-                                            setDialogState(() {
-                                              task.attachments.removeAt(index);
-                                            });
+                                            final removed = task.attachments.removeAt(index);
+                                            setDialogState(() {});
+                                            FirebaseTaskService().deleteAttachmentFile(removed.imageUrl);
+                                            FirebaseTaskService().updateTask(task);
                                             setState(() {});
                                           },
                                           child: Container(
@@ -2739,6 +2892,7 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
                                   ),
                                 );
                               });
+                              FirebaseTaskService().updateTask(task);
                               setState(() {});
                             },
                           );
@@ -4033,7 +4187,7 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
         ),
         const SizedBox(height: 4),
         Text(
-          'Real-time allocation, production briefs, and clocked sessions across the design squad.',
+          'Real-time allocation, production briefs, and clocked sessions across the design squad',
           style: GoogleFonts.inter(
             fontSize: 13,
             color: const Color(0xFF64748B),
