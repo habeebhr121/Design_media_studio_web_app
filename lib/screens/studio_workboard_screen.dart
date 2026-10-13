@@ -2885,43 +2885,43 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
                         ),
 
                       const SizedBox(height: 18),
-                      const Divider(height: 1, color: Color(0xFFF1F5F9)),
-                      const SizedBox(height: 14),
+                      // const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                      // const SizedBox(height: 14),
 
-                      Text(
-                        'Quick Attach Studio Presets:',
-                        style: GoogleFonts.jetBrainsMono(fontSize: 10.5, fontWeight: FontWeight.w600, color: const Color(0xFF64748B)),
-                      ),
-                      const SizedBox(height: 8),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 6,
-                        children: samplePresets.map((preset) {
-                          return ActionChip(
-                            avatar: const Icon(Icons.add_photo_alternate_outlined, size: 14, color: Color(0xFF25206A)),
-                            label: Text(
-                              '+ ${preset['name']}',
-                              style: GoogleFonts.jetBrainsMono(fontSize: 10.5, color: const Color(0xFF1E293B)),
-                            ),
-                            backgroundColor: const Color(0xFFF1F5F9),
-                            onPressed: () {
-                              setDialogState(() {
-                                task.attachments.add(
-                                  TaskAttachment(
-                                    id: DateTime.now().millisecondsSinceEpoch.toString(),
-                                    name: preset['name']!,
-                                    imageUrl: preset['url']!,
-                                    fileSize: preset['size']!,
-                                    uploadedAt: 'Just now',
-                                  ),
-                                );
-                              });
-                              FirebaseTaskService().updateTask(task);
-                              setState(() {});
-                            },
-                          );
-                        }).toList(),
-                      ),
+                      // Text(
+                      //   'Quick Attach Studio Presets:',
+                      //   style: GoogleFonts.jetBrainsMono(fontSize: 10.5, fontWeight: FontWeight.w600, color: const Color(0xFF64748B)),
+                      // ),
+                      // const SizedBox(height: 8),
+                      // Wrap(
+                      //   spacing: 8,
+                      //   runSpacing: 6,
+                      //   children: samplePresets.map((preset) {
+                      //     return ActionChip(
+                      //       avatar: const Icon(Icons.add_photo_alternate_outlined, size: 14, color: Color(0xFF25206A)),
+                      //       label: Text(
+                      //         '+ ${preset['name']}',
+                      //         style: GoogleFonts.jetBrainsMono(fontSize: 10.5, color: const Color(0xFF1E293B)),
+                      //       ),
+                      //       backgroundColor: const Color(0xFFF1F5F9),
+                      //       onPressed: () {
+                      //         setDialogState(() {
+                      //           task.attachments.add(
+                      //             TaskAttachment(
+                      //               id: DateTime.now().millisecondsSinceEpoch.toString(),
+                      //               name: preset['name']!,
+                      //               imageUrl: preset['url']!,
+                      //               fileSize: preset['size']!,
+                      //               uploadedAt: 'Just now',
+                      //             ),
+                      //           );
+                      //         });
+                      //         FirebaseTaskService().updateTask(task);
+                      //         setState(() {});
+                      //       },
+                      //     );
+                      //   }).toList(),
+                      // ),
 
                       const SizedBox(height: 20),
                       Row(
