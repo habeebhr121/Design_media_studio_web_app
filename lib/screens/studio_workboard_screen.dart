@@ -980,7 +980,7 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
                         ),
                       ),
                       const SizedBox(height: 8),
-                      ...TaskStatus.values.map((s) {
+                      ...TaskStatus.values.where((s) => s != TaskStatus.progressed).map((s) {
                         final isSelected = currentStatus == s;
                         return InkWell(
                           borderRadius: BorderRadius.circular(10),
@@ -1712,11 +1712,12 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
                                       fontWeight: FontWeight.w500,
                                       color: const Color(0xFF0F172A),
                                     ),
-                                    items: const [
-                                      DropdownMenuItem(value: TaskStatus.inProgress, child: Text('In Progress')),
-                                      DropdownMenuItem(value: TaskStatus.pending, child: Text('Pending')),
-                                      DropdownMenuItem(value: TaskStatus.completed, child: Text('Completed')),
-                                      DropdownMenuItem(value: TaskStatus.progressed, child: Text('Progressed')),
+                                    items: [
+                                      const DropdownMenuItem(value: TaskStatus.inProgress, child: Text('In Progress')),
+                                      const DropdownMenuItem(value: TaskStatus.pending, child: Text('Pending')),
+                                      const DropdownMenuItem(value: TaskStatus.completed, child: Text('Completed')),
+                                      if (selectedStatus == TaskStatus.progressed)
+                                        const DropdownMenuItem(value: TaskStatus.progressed, child: Text('Progressed')),
                                     ],
                                     onChanged: (val) {
                                       if (val != null) setDialogState(() => selectedStatus = val);
@@ -3717,7 +3718,6 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
                                         DropdownMenuItem(value: TaskStatus.inProgress, child: Text('In Progress')),
                                         DropdownMenuItem(value: TaskStatus.pending, child: Text('Pending')),
                                         DropdownMenuItem(value: TaskStatus.completed, child: Text('Completed')),
-                                        DropdownMenuItem(value: TaskStatus.progressed, child: Text('Progressed')),
                                       ],
                                       onChanged: (val) {
                                         if (val != null) setDialogState(() => selectedStatus = val);
@@ -4487,6 +4487,7 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
   Widget _buildFiltersBar({required bool isNarrow}) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+      alignment: Alignment.center,
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(10),
@@ -5235,20 +5236,20 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
                   }
                 },
                 itemBuilder: (context) => [
-                  if (task.status == TaskStatus.pending)
-                    PopupMenuItem(
-                      value: 'assign_today',
-                      child: Row(
-                        children: [
-                          const Icon(Icons.today_rounded, size: 16, color: Color(0xFF322A86)),
-                          const SizedBox(width: 10),
-                          Text(
-                            'Assign as Today\'s Work',
-                            style: GoogleFonts.inter(fontSize: 12.5, fontWeight: FontWeight.w600, color: const Color(0xFF322A86)),
-                          ),
-                        ],
-                      ),
-                    ),
+                  // if (task.status == TaskStatus.pending)
+                  //   PopupMenuItem(
+                  //     value: 'assign_today',
+                  //     child: Row(
+                  //       children: [
+                  //         const Icon(Icons.today_rounded, size: 16, color: Color(0xFF322A86)),
+                  //         const SizedBox(width: 10),
+                  //         Text(
+                  //           'Assign as Today\'s Work',
+                  //           style: GoogleFonts.inter(fontSize: 12.5, fontWeight: FontWeight.w600, color: const Color(0xFF322A86)),
+                  //         ),
+                  //       ],
+                  //     ),
+                  //   ),
                   PopupMenuItem(
                     value: 'status',
                     child: Row(
