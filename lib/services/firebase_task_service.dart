@@ -119,6 +119,12 @@ class FirebaseTaskService {
     };
   }
 
+  static String _formatCurrentDate() {
+    final now = DateTime.now();
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return '${months[now.month - 1]} ${now.day.toString().padLeft(2, '0')}, ${now.year}';
+  }
+
   /// Converts a Firestore Map to a StudioTask
   StudioTask taskFromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
     final data = doc.data() ?? {};
@@ -157,7 +163,7 @@ class FirebaseTaskService {
 
     return StudioTask(
       id: id,
-      date: data['date'] as String? ?? 'Oct 24, 2024',
+      date: data['date'] as String? ?? _formatCurrentDate(),
       designerName: data['designerName'] as String? ?? '',
       designerRole: data['designerRole'] as String? ?? '',
       avatarUrl: data['avatarUrl'] as String? ?? '',

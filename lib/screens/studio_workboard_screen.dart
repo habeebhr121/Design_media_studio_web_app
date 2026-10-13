@@ -126,11 +126,11 @@ class StudioWorkboardScreen extends StatefulWidget {
 }
 
 class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
-  String _selectedDateFilter = 'Today'; // 'Today', 'Yesterday', 'Custom'
-  DateTime _selectedCustomDate = DateTime(2024, 10, 22);
+  String _selectedDateFilter = 'Today'; // 'Today', 'Yesterday', 'Last 7 Days', 'Last 14 Days', 'Custom'
+  DateTime _selectedCustomDate = DateTime.now();
 
-  static const String kTodayDateStr = 'Oct 24, 2024';
-  static const String kYesterdayDateStr = 'Oct 23, 2024';
+  String get _todayDateStr => _formatDate(DateTime.now());
+  String get _yesterdayDateStr => _formatDate(DateTime.now().subtract(const Duration(days: 1)));
 
   String _selectedDesigner = 'All 4';
   String _selectedStatus = 'All';
@@ -149,7 +149,7 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
   void initState() {
     super.initState();
     _selectedDateFilter = 'Today';
-    _selectedCustomDate = DateTime(2024, 10, 22);
+    _selectedCustomDate = DateTime.now();
     _startTimer();
     _initData();
   }
@@ -182,20 +182,36 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
   }
 
   String _formatDate(DateTime? dt) {
-    if (dt == null) return 'Oct 22, 2024';
+    final target = dt ?? DateTime.now();
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    final mIndex = (target.month - 1).clamp(0, 11);
+    return '${months[mIndex]} ${target.day.toString().padLeft(2, '0')}, ${target.year}';
+  }
+
+  String _formatShortDate(DateTime dt) {
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     final mIndex = (dt.month - 1).clamp(0, 11);
-    return '${months[mIndex]} ${dt.day.toString().padLeft(2, '0')}, ${dt.year}';
+    return '${months[mIndex]} ${dt.day}';
   }
 
   String _getActiveDateString() {
-    if (_selectedDateFilter == 'Yesterday') return kYesterdayDateStr;
-    if (_selectedDateFilter == 'Last 7 Days') return 'Last 7 Days (Oct 18 - 24)';
-    if (_selectedDateFilter == 'Last 14 Days') return 'Last 14 Days (Oct 11 - 24)';
+    final now = DateTime.now();
+    if (_selectedDateFilter == 'Yesterday') return _yesterdayDateStr;
+    if (_selectedDateFilter == 'Last 7 Days') {
+      final start = now.subtract(const Duration(days: 6));
+      return 'Last 7 Days (${_formatShortDate(start)} - ${_formatShortDate(now)})';
+    }
+    if (_selectedDateFilter == 'Last 14 Days') {
+      final start = now.subtract(const Duration(days: 13));
+      return 'Last 14 Days (${_formatShortDate(start)} - ${_formatShortDate(now)})';
+    }
     if (_selectedDateFilter == 'Custom') {
       return _formatDate(_selectedCustomDate);
     }
-    return kTodayDateStr;
+    if (_selectedDateFilter == 'All') {
+      return 'All Time';
+    }
+    return _todayDateStr;
   }
 
   DateTime _parseTaskDate(String dateStr) {
@@ -206,13 +222,13 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
           'Jan': 1, 'Feb': 2, 'Mar': 3, 'Apr': 4, 'May': 5, 'Jun': 6,
           'Jul': 7, 'Aug': 8, 'Sep': 9, 'Oct': 10, 'Nov': 11, 'Dec': 12
         };
-        final month = months[parts[0]] ?? 10;
-        final day = int.tryParse(parts[1]) ?? 24;
-        final year = int.tryParse(parts[2]) ?? 2024;
+        final month = months[parts[0]] ?? DateTime.now().month;
+        final day = int.tryParse(parts[1]) ?? DateTime.now().day;
+        final year = int.tryParse(parts[2]) ?? DateTime.now().year;
         return DateTime(year, month, day);
       }
     } catch (_) {}
-    return DateTime(2024, 10, 24);
+    return DateTime.now();
   }
 
   String _formatTimeOfDay(TimeOfDay tod) {
@@ -331,8 +347,10 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
         _selectedStatus == 'Pending';
 
     final taskDate = _parseTaskDate(task.date);
-    final refDate = DateTime(2024, 10, 24); // Reference "Today" date
-    final diff = refDate.difference(taskDate).inDays;
+    final now = DateTime.now();
+    final todayMidnight = DateTime(now.year, now.month, now.day);
+    final taskMidnight = DateTime(taskDate.year, taskDate.month, taskDate.day);
+    final diff = todayMidnight.difference(taskMidnight).inDays;
 
     if (isGlobalStatusFilter) {
       // When In Progress or Pending is active:
@@ -344,16 +362,20 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
       return diff >= 0 && diff <= 14;
     }
 
-    if (_selectedDateFilter == 'Today') {
-      return task.date == kTodayDateStr;
+    if (_selectedDateFilter == 'All') {
+      return true;
+    } else if (_selectedDateFilter == 'Today') {
+      return taskMidnight == todayMidnight || task.date == _todayDateStr;
     } else if (_selectedDateFilter == 'Yesterday') {
-      return task.date == kYesterdayDateStr;
+      final yestMidnight = todayMidnight.subtract(const Duration(days: 1));
+      return taskMidnight == yestMidnight || task.date == _yesterdayDateStr;
     } else if (_selectedDateFilter == 'Last 7 Days') {
       return diff >= 0 && diff <= 7;
     } else if (_selectedDateFilter == 'Last 14 Days') {
       return diff >= 0 && diff <= 14;
     } else if (_selectedDateFilter == 'Custom') {
-      return task.date == _formatDate(_selectedCustomDate);
+      final customMidnight = DateTime(_selectedCustomDate.year, _selectedCustomDate.month, _selectedCustomDate.day);
+      return taskMidnight == customMidnight || task.date == _formatDate(_selectedCustomDate);
     }
     return true;
   }
@@ -421,7 +443,7 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
   }
 
   List<DailyCadence> get _cadenceData {
-    DateTime refDate = DateTime(2024, 10, 24);
+    DateTime refDate = DateTime.now();
     if (_tasks.isNotEmpty) {
       for (final t in _tasks) {
         final d = _parseTaskDate(t.date);
@@ -3018,7 +3040,11 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
     final clientCtrl = TextEditingController(text: initialPendingTask?.clientName ?? '');
     final briefCtrl = TextEditingController(text: initialPendingTask?.workBrief ?? '');
     TimeOfDay selectedStartTime = TimeOfDay.now();
-    String selectedDateStr = _getActiveDateString();
+    String selectedDateStr = (_selectedDateFilter == 'Yesterday')
+        ? _yesterdayDateStr
+        : (_selectedDateFilter == 'Custom')
+            ? _formatDate(_selectedCustomDate)
+            : _todayDateStr;
     String selectedDesignerName = initialPendingTask != null
         ? _mapDesignerName(initialPendingTask.designerName)
         : designers.first.name;
@@ -4302,6 +4328,9 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
     } else if (_selectedDateFilter == 'Custom') {
       loggedLabel = 'DAY LOGGED';
       completedLabel = 'COMPLETED OUTPUT';
+    } else if (_selectedDateFilter == 'All') {
+      loggedLabel = 'TOTAL LOGGED';
+      completedLabel = 'TOTAL COMPLETED';
     }
 
     final c1 = _buildMetricCard(
@@ -4500,6 +4529,10 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
               }),
               const SizedBox(width: 6),
               _buildCustomDateChip(),
+              const SizedBox(width: 6),
+              _buildFilterChip('All', isSelected: _selectedDateFilter == 'All', onSelected: () {
+                setState(() => _selectedDateFilter = 'All');
+              }),
             ],
           ),
 
@@ -4647,11 +4680,12 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
     return InkWell(
       borderRadius: BorderRadius.circular(6),
       onTap: () async {
+        final initialDate = isSelected ? _selectedCustomDate : DateTime.now();
         final picked = await showDatePicker(
           context: context,
-          initialDate: _selectedCustomDate,
+          initialDate: initialDate,
           firstDate: DateTime(2020),
-          lastDate: DateTime(2030),
+          lastDate: DateTime(2035),
           builder: (context, child) {
             return Theme(
               data: Theme.of(context).copyWith(

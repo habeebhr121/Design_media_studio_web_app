@@ -6,6 +6,7 @@ import 'package:studio_track/data/designers_list.dart';
 import 'package:studio_track/data/dummy_data.dart';
 import 'package:studio_track/screens/studio_workboard_screen.dart';
 import 'package:studio_track/services/firebase_task_service.dart';
+import 'package:studio_track/utils/csv_downloader.dart';
 
 // --- DATA MODELS ---
 
@@ -64,7 +65,11 @@ class HoursReportScreen extends StatefulWidget {
 }
 
 class _HoursReportScreenState extends State<HoursReportScreen> {
-  String _selectedTimeframe = 'This Week'; // 'This Week', 'This Month', 'Last Month', 'Custom'
+  String _selectedTimeframe = 'This Week'; // 'This Week', 'This Month', 'Last Month', 'Custom', 'All'
+  DateTimeRange? _customDateRange;
+  static const _monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+  String _formatShortDate(DateTime dt) => '${_monthNames[dt.month - 1]} ${dt.day.toString().padLeft(2, '0')}';
   String _selectedDesignerFilter = 'All Designers';
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
@@ -127,13 +132,14 @@ class _HoursReportScreenState extends State<HoursReportScreen> {
           'Jan': 1, 'Feb': 2, 'Mar': 3, 'Apr': 4, 'May': 5, 'Jun': 6,
           'Jul': 7, 'Aug': 8, 'Sep': 9, 'Oct': 10, 'Nov': 11, 'Dec': 12
         };
-        final month = months[parts[0]] ?? 10;
-        final day = int.tryParse(parts[1]) ?? 24;
-        final year = int.tryParse(parts[2]) ?? 2024;
+        final now = DateTime.now();
+        final month = months[parts[0]] ?? now.month;
+        final day = int.tryParse(parts[1]) ?? now.day;
+        final year = int.tryParse(parts[2]) ?? now.year;
         return DateTime(year, month, day);
       }
     } catch (_) {}
-    return DateTime(2024, 10, 24);
+    return DateTime.now();
   }
 
   TimeOfDay? _parseTimeString(String s) {
@@ -180,17 +186,37 @@ class _HoursReportScreenState extends State<HoursReportScreen> {
 
   bool _isTaskInTimeframe(StudioTask task) {
     final taskDate = _parseTaskDate(task.date);
-    final refDate = DateTime(2024, 10, 24); // Reference anchor date
-    final diff = refDate.difference(taskDate).inDays;
+    final now = DateTime.now();
+    final todayMidnight = DateTime(now.year, now.month, now.day);
+    final taskMidnight = DateTime(taskDate.year, taskDate.month, taskDate.day);
+    final diff = todayMidnight.difference(taskMidnight).inDays;
+
+    final lastMonthDate = DateTime(now.year, now.month - 1);
 
     switch (_selectedTimeframe) {
       case 'This Week':
         return diff >= 0 && diff <= 6;
       case 'This Month':
-        return taskDate.month == 10 && taskDate.year == 2024;
+        return taskDate.month == now.month && taskDate.year == now.year;
       case 'Last Month':
-        return taskDate.month == 9 && taskDate.year == 2024;
-      case 'Custom':
+        return taskDate.month == lastMonthDate.month && taskDate.year == lastMonthDate.year;
+      // case 'Custom':
+      //   if (_customDateRange != null) {
+      //     final startMidnight = DateTime(
+      //       _customDateRange!.start.year,
+      //       _customDateRange!.start.month,
+      //       _customDateRange!.start.day,
+      //     );
+      //     final endMidnight = DateTime(
+      //       _customDateRange!.end.year,
+      //       _customDateRange!.end.month,
+      //       _customDateRange!.end.day,
+      //     );
+      //     return (taskMidnight.isAtSameMomentAs(startMidnight) || taskMidnight.isAfter(startMidnight)) &&
+      //            (taskMidnight.isAtSameMomentAs(endMidnight) || taskMidnight.isBefore(endMidnight));
+      //   }
+      //   return true;
+      case 'All':
       default:
         return true;
     }
@@ -303,31 +329,96 @@ class _HoursReportScreenState extends State<HoursReportScreen> {
     }).toList();
   }
 
+  String _csvEscape(String val) {
+    if (val.contains(',') || val.contains('"') || val.contains('\n') || val.contains('\r')) {
+      return '"${val.replaceAll('"', '""')}"';
+    }
+    return val;
+  }
+
   void _exportCSV() {
     final logs = _filteredTasks;
-    final StringBuffer csv = StringBuffer();
-    csv.writeln('Date,Designer,Deliverable,Type,Time Slot,Hours,Status');
-
-    for (final task in logs) {
-      final hours = _parseLoggedHours(task.timeLogged, task.timeWindow).toStringAsFixed(1);
-      final cleanWorkName = task.workName.replaceAll(',', ';');
-      final cleanClient = task.clientName.replaceAll(',', ';');
-      csv.writeln('${task.date},"${task.designerName}","$cleanWorkName ($cleanClient)",${task.typeTag},"${task.timeWindow}",${hours}h,${task.status.label}');
+    if (logs.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.info_outline_rounded, color: Colors.white, size: 18),
+              const SizedBox(width: 8),
+              Text('No tasks found for $_selectedTimeframe to export.'),
+            ],
+          ),
+          backgroundColor: const Color(0xFF334155),
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+      return;
     }
 
+    final StringBuffer csv = StringBuffer();
+    // CSV Header row
+    csv.writeln('Date,Designer,Client,Work Deliverable,Type,Time Window,Logged Hours,Status,Priority,Work Brief');
+
+    double totalHours = 0.0;
+    for (final task in logs) {
+      final hoursNum = _parseLoggedHours(task.timeLogged, task.timeWindow);
+      totalHours += hoursNum;
+      final hoursStr = hoursNum.toStringAsFixed(1);
+
+      final row = [
+        _csvEscape(task.date),
+        _csvEscape(task.designerName),
+        _csvEscape(task.clientName),
+        _csvEscape(task.workName),
+        _csvEscape(task.typeTag),
+        _csvEscape(task.timeWindow),
+        hoursStr,
+        _csvEscape(task.status.label),
+        task.isPriority ? 'High Priority' : 'Normal',
+        _csvEscape(task.workBrief),
+      ];
+      csv.writeln(row.join(','));
+    }
+
+    // Summary totals row
+    csv.writeln('');
+    csv.writeln('Total Tasks,${logs.length},Total Logged Hours,${totalHours.toStringAsFixed(1)}');
+
+    // Build timeframe-specific filename
+    final now = DateTime.now();
+    final dateStamp = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+    String timeframeTag = _selectedTimeframe.toLowerCase().replaceAll(' ', '_');
+    if (_selectedTimeframe == 'Custom' && _customDateRange != null) {
+      final s = '${_customDateRange!.start.year}${_customDateRange!.start.month.toString().padLeft(2, '0')}${_customDateRange!.start.day.toString().padLeft(2, '0')}';
+      final e = '${_customDateRange!.end.year}${_customDateRange!.end.month.toString().padLeft(2, '0')}${_customDateRange!.end.day.toString().padLeft(2, '0')}';
+      timeframeTag = 'custom_${s}_to_$e';
+    }
+    final filename = 'studiotrack_${timeframeTag}_$dateStamp.csv';
+
+    // Trigger browser file download
+    downloadCsvFile(csv.toString(), filename);
+
+    // Also copy to clipboard for convenience
     Clipboard.setData(ClipboardData(text: csv.toString()));
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
           children: [
-            const Icon(Icons.check_circle_rounded, color: Colors.white, size: 18),
+            const Icon(Icons.file_download_done_rounded, color: Colors.white, size: 18),
             const SizedBox(width: 8),
-            Text('Exported ${logs.length} records to clipboard as CSV!'),
+            Expanded(
+              child: Text(
+                'Exported "$filename" (${logs.length} records, ${totalHours.toStringAsFixed(1)}h)!',
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
           ],
         ),
         backgroundColor: const Color(0xFF16152B),
         behavior: SnackBarBehavior.floating,
-        duration: const Duration(seconds: 3),
+        duration: const Duration(seconds: 4),
       ),
     );
   }
@@ -573,7 +664,8 @@ class _HoursReportScreenState extends State<HoursReportScreen> {
           _buildTimeframePill('This Week'),
           _buildTimeframePill('This Month'),
           _buildTimeframePill('Last Month'),
-          _buildTimeframePill('Custom'),
+          // _buildCustomTimeframePill(),
+          _buildTimeframePill('All'),
         ],
       ),
     );
@@ -596,6 +688,85 @@ class _HoursReportScreenState extends State<HoursReportScreen> {
         const SizedBox(width: 20),
         timeframeControls,
       ],
+    );
+  }
+
+  Widget _buildCustomTimeframePill() {
+    final isSelected = _selectedTimeframe == 'Custom';
+    final customLabel = (_customDateRange != null && isSelected)
+        ? '${_formatShortDate(_customDateRange!.start)} - ${_formatShortDate(_customDateRange!.end)}'
+        : 'Custom';
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(6),
+      onTap: () async {
+        final now = DateTime.now();
+        final picked = await showDateRangePicker(
+          context: context,
+          firstDate: DateTime(2020),
+          lastDate: DateTime(2035),
+          initialDateRange: _customDateRange ??
+              DateTimeRange(
+                start: now.subtract(const Duration(days: 7)),
+                end: now,
+              ),
+          builder: (context, child) {
+            return Theme(
+              data: Theme.of(context).copyWith(
+                colorScheme: const ColorScheme.light(
+                  primary: Color(0xFF25206A),
+                  onPrimary: Colors.white,
+                  onSurface: Color(0xFF0F172A),
+                ),
+              ),
+              child: child!,
+            );
+          },
+        );
+        if (picked != null) {
+          setState(() {
+            _customDateRange = picked;
+            _selectedTimeframe = 'Custom';
+          });
+        } else if (_selectedTimeframe != 'Custom' && _customDateRange != null) {
+          setState(() {
+            _selectedTimeframe = 'Custom';
+          });
+        }
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+        decoration: BoxDecoration(
+          color: isSelected ? Colors.white : Colors.transparent,
+          borderRadius: BorderRadius.circular(6),
+          boxShadow: isSelected
+              ? const [
+                  BoxShadow(
+                    color: Color(0x0A000000),
+                    offset: Offset(0, 1),
+                    blurRadius: 4,
+                  ),
+                ]
+              : null,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (isSelected) ...[
+              const Icon(Icons.date_range_rounded, size: 12, color: Color(0xFF1E1B4B)),
+              const SizedBox(width: 5),
+            ],
+            Text(
+              customLabel,
+              style: GoogleFonts.jetBrainsMono(
+                fontSize: 11,
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                color: isSelected ? const Color(0xFF1E1B4B) : const Color(0xFF64748B),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
