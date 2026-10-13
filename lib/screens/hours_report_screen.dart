@@ -664,7 +664,7 @@ class _HoursReportScreenState extends State<HoursReportScreen> {
           _buildTimeframePill('This Week'),
           _buildTimeframePill('This Month'),
           _buildTimeframePill('Last Month'),
-          // _buildCustomTimeframePill(),
+          _buildCustomTimeframePill(),
           _buildTimeframePill('All'),
         ],
       ),

@@ -1682,6 +1682,7 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
                       children: [
                         // STATUS DROPDOWN
                         Expanded(
+                          flex: 2,
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -1733,7 +1734,7 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
                         // LOGGED TIME SLOT
                         // START TIME
                         Expanded(
-                          flex: 2,
+                          flex: 1,
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -1789,7 +1790,7 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
 
                         // END TIME
                         Expanded(
-                          flex: 2,
+                          flex: 1,
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -1847,7 +1848,7 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
                                         ),
                                       ),
                                       Icon(
-                                        Icons.edit_calendar_rounded,
+                                        Icons.schedule_rounded,
                                         size: 16,
                                         color: selectedEndTime != null ? const Color(0xFF4F46E5) : const Color(0xFF94A3B8),
                                       ),
@@ -3701,28 +3702,32 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
                                   height: 42,
                                   padding: const EdgeInsets.symmetric(horizontal: 14),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFFF1F4FA),
+                                    color: const Color(0xFFEFF6FF),
                                     borderRadius: BorderRadius.circular(6),
+                                    border: Border.all(color: const Color(0xFFBFDBFE)),
                                   ),
-                                  child: DropdownButtonHideUnderline(
-                                    child: DropdownButton<TaskStatus>(
-                                      value: selectedStatus,
-                                      isExpanded: true,
-                                      icon: const Icon(Icons.unfold_more_rounded, size: 18, color: Color(0xFF475569)),
-                                      style: GoogleFonts.inter(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w500,
-                                        color: const Color(0xFF0F172A),
+                                  child: Row(
+                                    children: [
+                                      Container(
+                                        width: 8,
+                                        height: 8,
+                                        decoration: const BoxDecoration(
+                                          color: Color(0xFF3B82F6),
+                                          shape: BoxShape.circle,
+                                        ),
                                       ),
-                                      items: const [
-                                        DropdownMenuItem(value: TaskStatus.inProgress, child: Text('In Progress')),
-                                        DropdownMenuItem(value: TaskStatus.pending, child: Text('Pending')),
-                                        DropdownMenuItem(value: TaskStatus.completed, child: Text('Completed')),
-                                      ],
-                                      onChanged: (val) {
-                                        if (val != null) setDialogState(() => selectedStatus = val);
-                                      },
-                                    ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                          'In Progress',
+                                          style: GoogleFonts.inter(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w600,
+                                            color: const Color(0xFF1E40AF),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ],
