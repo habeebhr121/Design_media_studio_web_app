@@ -1609,9 +1609,9 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
                                 ),
                                 child: DropdownButtonHideUnderline(
                                   child: DropdownButton<String>(
-                                    value: ['Logo', 'UI / UX', 'Poster / Print', 'Video / 3D', 'Editing / Retouch'].contains(selectedType)
+                                    value: ['Logo', 'Design', 'Poster', 'Video', 'Editing', 'Other'].contains(selectedType)
                                         ? selectedType
-                                        : 'UI / UX',
+                                        : 'Design',
                                     isExpanded: true,
                                     icon: const Icon(Icons.unfold_more_rounded, size: 18, color: Color(0xFF475569)),
                                     style: GoogleFonts.inter(
@@ -1621,10 +1621,11 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
                                     ),
                                     items: const [
                                       DropdownMenuItem(value: 'Logo', child: Text('Logo')),
-                                      DropdownMenuItem(value: 'UI / UX', child: Text('UI / UX')),
-                                      DropdownMenuItem(value: 'Poster / Print', child: Text('Poster / Print')),
-                                      DropdownMenuItem(value: 'Video / 3D', child: Text('Video / 3D')),
-                                      DropdownMenuItem(value: 'Editing / Retouch', child: Text('Editing / Retouch')),
+                                      DropdownMenuItem(value: 'Design', child: Text('Design')),
+                                      DropdownMenuItem(value: 'Poster', child: Text('Poster')),
+                                      DropdownMenuItem(value: 'Video', child: Text('Video')),
+                                      DropdownMenuItem(value: 'Editing', child: Text('Editing')),
+                                      DropdownMenuItem(value: 'Other', child: Text('Other')),
                                     ],
                                     onChanged: (val) {
                                       if (val != null) setDialogState(() => selectedType = val);
@@ -3012,14 +3013,14 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
   }
 
   String _mapTypeTag(String tag) {
-    if (['Logo', 'UI / UX', 'Poster / Print', 'Video / 3D', 'Editing / Retouch'].contains(tag)) {
+    if (['Logo', 'Design', 'Poster', 'Video', 'Editing', 'Other'].contains(tag)) {
       return tag;
     }
     final lower = tag.toLowerCase();
-    if (lower.contains('ui') || lower.contains('ux')) return 'UI / UX';
-    if (lower.contains('poster') || lower.contains('print')) return 'Poster / Print';
-    if (lower.contains('video') || lower.contains('3d') || lower.contains('motion')) return 'Video / 3D';
-    if (lower.contains('edit') || lower.contains('retouch')) return 'Editing / Retouch';
+    if (lower.contains('design')) return 'Design';
+    if (lower.contains('poster') || lower.contains('print')) return 'Poster';
+    if (lower.contains('video') || lower.contains('3d') || lower.contains('motion')) return 'Video';
+    if (lower.contains('edit') || lower.contains('retouch')) return 'Editing';
     return 'Logo';
   }
 
@@ -3623,10 +3624,11 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
                                       ),
                                       items: const [
                                         DropdownMenuItem(value: 'Logo', child: Text('Logo')),
-                                        DropdownMenuItem(value: 'UI / UX', child: Text('UI / UX')),
-                                        DropdownMenuItem(value: 'Poster / Print', child: Text('Poster / Print')),
-                                        DropdownMenuItem(value: 'Video / 3D', child: Text('Video / 3D')),
-                                        DropdownMenuItem(value: 'Editing / Retouch', child: Text('Editing / Retouch')),
+                                        DropdownMenuItem(value: 'Design', child: Text('Design')),
+                                        DropdownMenuItem(value: 'Poster', child: Text('Poster')),
+                                        DropdownMenuItem(value: 'Video', child: Text('Video')),
+                                        DropdownMenuItem(value: 'Editing', child: Text('Editing')),
+                                        DropdownMenuItem(value: 'Other', child: Text('Other')),
                                       ],
                                       onChanged: (val) {
                                         if (val != null) setDialogState(() => selectedType = val);
@@ -4852,7 +4854,7 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
               itemCount: tasks.length,
               separatorBuilder: (context, index) => const Divider(
                 height: 1,
-                color: Color(0xFFF8FAFC),
+                color: Color.fromARGB(255, 231, 231, 234),
                 indent: 24,
                 endIndent: 24,
               ),
