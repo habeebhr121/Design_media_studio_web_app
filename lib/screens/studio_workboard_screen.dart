@@ -1527,7 +1527,14 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
                                       );
                                     }).toList(),
                                     onChanged: (val) {
-                                      if (val != null) setDialogState(() => selectedDesignerName = val);
+                                      if (val != null) {
+                                        setDialogState(() {
+                                          selectedDesignerName = val;
+                                          if (val.trim().toLowerCase() != 'sabith amjadi' && selectedType == 'Tutoring') {
+                                            selectedType = 'Design';
+                                          }
+                                        });
+                                      }
                                     },
                                   ),
                                 ),
@@ -1608,27 +1615,36 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
                                   borderRadius: BorderRadius.circular(6),
                                 ),
                                 child: DropdownButtonHideUnderline(
-                                  child: DropdownButton<String>(
-                                    value: ['Logo', 'Design', 'Poster', 'Video', 'Editing', 'Other'].contains(selectedType)
-                                        ? selectedType
-                                        : 'Design',
-                                    isExpanded: true,
-                                    icon: const Icon(Icons.unfold_more_rounded, size: 18, color: Color(0xFF475569)),
-                                    style: GoogleFonts.inter(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w500,
-                                      color: const Color(0xFF0F172A),
-                                    ),
-                                    items: const [
-                                      DropdownMenuItem(value: 'Logo', child: Text('Logo')),
-                                      DropdownMenuItem(value: 'Design', child: Text('Design')),
-                                      DropdownMenuItem(value: 'Poster', child: Text('Poster')),
-                                      DropdownMenuItem(value: 'Video', child: Text('Video')),
-                                      DropdownMenuItem(value: 'Editing', child: Text('Editing')),
-                                      DropdownMenuItem(value: 'Other', child: Text('Other')),
-                                    ],
-                                    onChanged: (val) {
-                                      if (val != null) setDialogState(() => selectedType = val);
+                                  child: Builder(
+                                    builder: (context) {
+                                      final isSabith = selectedDesignerName.trim().toLowerCase() == 'sabith amjadi';
+                                      final availableTypes = [
+                                        'Logo',
+                                        'Design',
+                                        'Poster',
+                                        'Video',
+                                        'Editing',
+                                        if (isSabith) 'Tutoring',
+                                        'Other',
+                                      ];
+                                      return DropdownButton<String>(
+                                        value: availableTypes.contains(selectedType)
+                                            ? selectedType
+                                            : 'Design',
+                                        isExpanded: true,
+                                        icon: const Icon(Icons.unfold_more_rounded, size: 18, color: Color(0xFF475569)),
+                                        style: GoogleFonts.inter(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w500,
+                                          color: const Color(0xFF0F172A),
+                                        ),
+                                        items: availableTypes.map((t) {
+                                          return DropdownMenuItem(value: t, child: Text(t));
+                                        }).toList(),
+                                        onChanged: (val) {
+                                          if (val != null) setDialogState(() => selectedType = val);
+                                        },
+                                      );
                                     },
                                   ),
                                 ),
@@ -3069,10 +3085,11 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
   }
 
   String _mapTypeTag(String tag) {
-    if (['Logo', 'Design', 'Poster', 'Video', 'Editing', 'Other'].contains(tag)) {
+    if (['Logo', 'Design', 'Poster', 'Video', 'Editing', 'Tutoring', 'Other'].contains(tag)) {
       return tag;
     }
     final lower = tag.toLowerCase();
+    if (lower.contains('tutor')) return 'Tutoring';
     if (lower.contains('design')) return 'Design';
     if (lower.contains('poster') || lower.contains('print')) return 'Poster';
     if (lower.contains('video') || lower.contains('3d') || lower.contains('motion')) return 'Video';
@@ -3588,7 +3605,14 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
                                         );
                                       }).toList(),
                                       onChanged: (val) {
-                                        if (val != null) setDialogState(() => selectedDesignerName = val);
+                                        if (val != null) {
+                                          setDialogState(() {
+                                            selectedDesignerName = val;
+                                            if (val.trim().toLowerCase() != 'sabith amjadi' && selectedType == 'Tutoring') {
+                                              selectedType = 'Logo';
+                                            }
+                                          });
+                                        }
                                       },
                                     ),
                                   ),
@@ -3669,25 +3693,36 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
                                     borderRadius: BorderRadius.circular(6),
                                   ),
                                   child: DropdownButtonHideUnderline(
-                                    child: DropdownButton<String>(
-                                      value: selectedType,
-                                      isExpanded: true,
-                                      icon: const Icon(Icons.unfold_more_rounded, size: 18, color: Color(0xFF475569)),
-                                      style: GoogleFonts.inter(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w500,
-                                        color: const Color(0xFF0F172A),
-                                      ),
-                                      items: const [
-                                        DropdownMenuItem(value: 'Logo', child: Text('Logo')),
-                                        DropdownMenuItem(value: 'Design', child: Text('Design')),
-                                        DropdownMenuItem(value: 'Poster', child: Text('Poster')),
-                                        DropdownMenuItem(value: 'Video', child: Text('Video')),
-                                        DropdownMenuItem(value: 'Editing', child: Text('Editing')),
-                                        DropdownMenuItem(value: 'Other', child: Text('Other')),
-                                      ],
-                                      onChanged: (val) {
-                                        if (val != null) setDialogState(() => selectedType = val);
+                                    child: Builder(
+                                      builder: (context) {
+                                        final isSabith = selectedDesignerName.trim().toLowerCase() == 'sabith amjadi';
+                                        final availableTypes = [
+                                          'Logo',
+                                          'Design',
+                                          'Poster',
+                                          'Video',
+                                          'Editing',
+                                          if (isSabith) 'Tutoring',
+                                          'Other',
+                                        ];
+                                        return DropdownButton<String>(
+                                          value: availableTypes.contains(selectedType)
+                                              ? selectedType
+                                              : 'Logo',
+                                          isExpanded: true,
+                                          icon: const Icon(Icons.unfold_more_rounded, size: 18, color: Color(0xFF475569)),
+                                          style: GoogleFonts.inter(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w500,
+                                            color: const Color(0xFF0F172A),
+                                          ),
+                                          items: availableTypes.map((t) {
+                                            return DropdownMenuItem(value: t, child: Text(t));
+                                          }).toList(),
+                                          onChanged: (val) {
+                                            if (val != null) setDialogState(() => selectedType = val);
+                                          },
+                                        );
                                       },
                                     ),
                                   ),
