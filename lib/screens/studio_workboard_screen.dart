@@ -2457,24 +2457,6 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
   }
 
   void _openAttachDialog(StudioTask task) {
-    final samplePresets = [
-      {
-        'name': 'UI_Flow_Screenshot.png',
-        'url': 'https://images.unsplash.com/photo-1581291518857-4e27b48ff24e?w=600&auto=format&fit=crop&q=80',
-        'size': '520 KB',
-      },
-      {
-        'name': 'Brand_Mockup_Export.jpg',
-        'url': 'https://images.unsplash.com/photo-1600132806370-bf17e65e942f?w=600&auto=format&fit=crop&q=80',
-        'size': '840 KB',
-      },
-      {
-        'name': '3D_Render_Preview.png',
-        'url': 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&auto=format&fit=crop&q=80',
-        'size': '1.1 MB',
-      },
-    ];
-
     Future<void> pickFilesFromDevice(void Function(void Function()) setDialogState) async {
       try {
         const int maxAttachmentBytes = 3 * 1024 * 1024; // 3 MB Limit
@@ -2860,12 +2842,86 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
                                         top: 4,
                                         right: 4,
                                         child: InkWell(
-                                          onTap: () {
-                                            final removed = task.attachments.removeAt(index);
-                                            setDialogState(() {});
-                                            FirebaseTaskService().deleteAttachmentFile(removed.imageUrl);
-                                            FirebaseTaskService().updateTask(task);
-                                            setState(() {});
+                                          onTap: () async {
+                                            final confirmed = await showDialog<bool>(
+                                              context: context,
+                                              builder: (confirmCtx) {
+                                                return AlertDialog(
+                                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                                  title: Row(
+                                                    children: [
+                                                      Container(
+                                                        padding: const EdgeInsets.all(8),
+                                                        decoration: BoxDecoration(
+                                                          color: const Color(0xFFFEF2F2),
+                                                          borderRadius: BorderRadius.circular(8),
+                                                        ),
+                                                        child: const Icon(Icons.delete_outline_rounded, color: Color(0xFFDC2626), size: 20),
+                                                      ),
+                                                      const SizedBox(width: 10),
+                                                      Text(
+                                                        'Remove Attachment?',
+                                                        style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w700, color: const Color(0xFF0F172A)),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                  content: Text(
+                                                    'Are you sure you want to remove "${att.name}"? This deliverable file will be permanently deleted from cloud storage.',
+                                                    style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF475569)),
+                                                  ),
+                                                  actionsPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                                  actions: [
+                                                    TextButton(
+                                                      onPressed: () => Navigator.pop(confirmCtx, false),
+                                                      child: Text(
+                                                        'Cancel',
+                                                        style: GoogleFonts.inter(fontWeight: FontWeight.w600, color: const Color(0xFF64748B)),
+                                                      ),
+                                                    ),
+                                                    ElevatedButton(
+                                                      style: ElevatedButton.styleFrom(
+                                                        backgroundColor: const Color(0xFFDC2626),
+                                                        foregroundColor: Colors.white,
+                                                        elevation: 0,
+                                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                                                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                                                      ),
+                                                      onPressed: () => Navigator.pop(confirmCtx, true),
+                                                      child: Text(
+                                                        'Remove',
+                                                        style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                );
+                                              },
+                                            );
+
+                                            if (confirmed == true) {
+                                              final removeIdx = task.attachments.indexWhere((a) => a.id == att.id);
+                                              if (removeIdx != -1) {
+                                                final removed = task.attachments.removeAt(removeIdx);
+                                                setDialogState(() {});
+                                                FirebaseTaskService().deleteAttachmentFile(removed.imageUrl);
+                                                FirebaseTaskService().updateTask(task);
+                                                setState(() {});
+                                                if (context.mounted) {
+                                                  ScaffoldMessenger.of(context).showSnackBar(
+                                                    SnackBar(
+                                                      content: Row(
+                                                        children: [
+                                                          const Icon(Icons.check_circle_outline_rounded, color: Colors.white, size: 16),
+                                                          const SizedBox(width: 8),
+                                                          Text('Removed "${removed.name}"'),
+                                                        ],
+                                                      ),
+                                                      duration: const Duration(seconds: 2),
+                                                      behavior: SnackBarBehavior.floating,
+                                                    ),
+                                                  );
+                                                }
+                                              }
+                                            }
                                           },
                                           child: Container(
                                             padding: const EdgeInsets.all(3),
