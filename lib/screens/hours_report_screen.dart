@@ -266,7 +266,7 @@ class _HoursReportScreenState extends State<HoursReportScreen> {
       }
 
       final completedCount = timeframeTasks.where((t) => t.status == TaskStatus.completed).length;
-      final activeCount = timeframeTasks.where((t) => t.status == TaskStatus.inProgress || t.status == TaskStatus.pending).length;
+      final activeCount = timeframeTasks.where((t) => t.status == TaskStatus.inProgress || t.status == TaskStatus.pending || t.status == TaskStatus.assigned).length;
       const quota = 40.0;
       final progress = quota > 0 ? (logged / quota).clamp(0.0, 1.0) : 0.0;
       final statusBadge = completedCount > 0 ? 'High Output' : (activeCount > 0 ? 'Active' : 'Idle');
@@ -506,7 +506,7 @@ class _HoursReportScreenState extends State<HoursReportScreen> {
                     clipBehavior: Clip.antiAlias,
                     child: Center(
                       child: Image.asset(
-                        'assets/logo/exouzia_logo.png',
+                        'assets/logo/exouzia_logo.webp',
                         width: 80,
                         height: 18,
                         fit: BoxFit.contain,
@@ -815,7 +815,7 @@ class _HoursReportScreenState extends State<HoursReportScreen> {
     }
 
     final completedCount = currentTasks.where((t) => t.status == TaskStatus.completed).length;
-    final activeReviewCount = currentTasks.where((t) => t.status == TaskStatus.inProgress || t.status == TaskStatus.pending).length;
+    final activeReviewCount = currentTasks.where((t) => t.status == TaskStatus.inProgress || t.status == TaskStatus.pending || t.status == TaskStatus.assigned).length;
     final activeStaff = currentTasks.map((t) => t.designerName).toSet().length;
     final designerCount = activeStaff > 0 ? activeStaff : (designers.isNotEmpty ? designers.length : 1);
     final avgDaily = totalLogged / designerCount;
@@ -1142,12 +1142,16 @@ class _HoursReportScreenState extends State<HoursReportScreen> {
 
   Widget _buildDesignerAvatar(String avatarUrl, String designerName, {double size = 32}) {
     final initial = designerName.isNotEmpty ? designerName[0].toUpperCase() : 'D';
-    final isAsset = avatarUrl.startsWith('assets/');
+    String resolvedUrl = avatarUrl;
+    if (resolvedUrl.startsWith('assets/')) {
+      resolvedUrl = resolvedUrl.replaceAll(RegExp(r'\.(jpg|jpeg|png)$'), '.webp');
+    }
+    final isAsset = resolvedUrl.startsWith('assets/');
 
     Widget imageWidget;
     if (isAsset) {
       imageWidget = Image.asset(
-        avatarUrl,
+        resolvedUrl,
         width: size,
         height: size,
         fit: BoxFit.cover,

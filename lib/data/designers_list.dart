@@ -3,28 +3,28 @@ import 'package:studio_track/models/designer_models.dart';
 final List<Designer> designers = [
   Designer(
     name: 'Jawad',
-    imagePath: 'assets/img/javad_img.jpg',
+    imagePath: 'assets/img/javad_img.webp',
     designation: 'Graphic Designer',
     description: 'Specialized in modern mobile app interfaces.',
   ),
 
   Designer(
     name: 'Sabith Amjadi',
-    imagePath: 'assets/img/amjadi_img.jpg',
+    imagePath: 'assets/img/amjadi_img.webp',
     designation: 'Senior Designer',
     description: 'Focused on user-centered product experiences.',
   ),
 
   Designer(
     name: 'Muhd. Nizam',
-    imagePath: 'assets/img/nizam_img.jpg',
+    imagePath: 'assets/img/nizam_img.webp',
     designation: 'Graphic Designer',
     description: 'Creates branding and visual design systems.',
   ),
 
     Designer(
     name: 'Sam',
-    imagePath: 'assets/img/sam_img.jpg',
+    imagePath: 'assets/img/sam_img.webp',
     designation: 'Graphic Designer',
     description: 'Creates branding and visual design systems.',
   ),

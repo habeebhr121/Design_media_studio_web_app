@@ -18,7 +18,8 @@ enum TaskStatus {
   inProgress('In Progress', Color(0xFF3B82F6), Color(0xFFEFF6FF), Color(0xFF2563EB)),
   completed('Completed', Color(0xFF10B981), Color(0xFFECFDF5), Color(0xFF047857)),
   pending('Pending', Color(0xFFEF4444), Color(0xFFFEF2F2), Color(0xFFB91C1C)),
-  progressed('Progressed', Color(0xFFF59E0B), Color(0xFFFFFBEB), Color(0xFFB45309));
+  progressed('Progressed', Color(0xFFF59E0B), Color(0xFFFFFBEB), Color(0xFFB45309)),
+  assigned('Assigned', Color(0xFF800020), Color(0xFFFDF2F4), Color(0xFF800020));
 
   final String label;
   final Color dotColor;
@@ -345,7 +346,8 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
 
   bool _isTaskInActiveTimeframe(StudioTask task) {
     final isGlobalStatusFilter = _selectedStatus == 'In Progress' ||
-        _selectedStatus == 'Pending';
+        _selectedStatus == 'Pending' ||
+        _selectedStatus == 'Assigned';
 
     final taskDate = _parseTaskDate(task.date);
     final now = DateTime.now();
@@ -754,13 +756,23 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      'TIME WINDOW',
-                                      style: GoogleFonts.jetBrainsMono(fontSize: 9.5, fontWeight: FontWeight.w700, color: const Color(0xFF64748B)),
+                                      task.status == TaskStatus.assigned ? 'ASSIGNED TIME' : 'TIME WINDOW',
+                                      style: GoogleFonts.jetBrainsMono(
+                                        fontSize: 9.5,
+                                        fontWeight: FontWeight.w700,
+                                        color: task.status == TaskStatus.assigned ? const Color(0xFF800020) : const Color(0xFF64748B),
+                                      ),
                                     ),
                                     const SizedBox(height: 2),
                                     Text(
-                                      '${task.date} • ${task.timeWindow}',
-                                      style: GoogleFonts.jetBrainsMono(fontSize: 12, fontWeight: FontWeight.w600, color: const Color(0xFF0F172A)),
+                                      task.status == TaskStatus.assigned
+                                          ? '${task.date} • ${task.timeWindow} (Assigned)'
+                                          : '${task.date} • ${task.timeWindow}',
+                                      style: GoogleFonts.jetBrainsMono(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                        color: task.status == TaskStatus.assigned ? const Color(0xFF800020) : const Color(0xFF0F172A),
+                                      ),
                                     ),
                                   ],
                                 ),
@@ -981,12 +993,22 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
                         ),
                       ),
                       const SizedBox(height: 8),
-                      ...TaskStatus.values.where((s) => s != TaskStatus.progressed).map((s) {
+                      ...TaskStatus.values.where((s) {
+                        if (s == TaskStatus.progressed) return false;
+                        if (s == TaskStatus.assigned) {
+                          return task.status == TaskStatus.assigned ||
+                              task.designerName.trim().toLowerCase() != 'sabith amjadi';
+                        }
+                        return true;
+                      }).map((s) {
                         final isSelected = currentStatus == s;
                         return InkWell(
                           borderRadius: BorderRadius.circular(10),
                           onTap: () {
                             setDialogState(() {
+                              if (currentStatus == TaskStatus.assigned && s == TaskStatus.inProgress) {
+                                startTime = TimeOfDay.now();
+                              }
                               currentStatus = s;
                             });
                           },
@@ -1030,7 +1052,46 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
                       const SizedBox(height: 12),
 
                       // TIME LOGGING SECTION
-                      if (currentStatus == TaskStatus.inProgress) ...[
+                      if (currentStatus == TaskStatus.assigned) ...[
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFDF2F4),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: const Color(0xFFF3C6D0)),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.assignment_ind_rounded, size: 20, color: Color(0xFF800020)),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Work Task Assigned by Senior Designer Sabith Amjadi',
+                                      style: GoogleFonts.inter(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w700,
+                                        color: const Color(0xFF800020),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      'Assigned at ${task.timeWindow} • Select "In Progress" above when work begins.',
+                                      style: GoogleFonts.jetBrainsMono(
+                                        fontSize: 10.5,
+                                        color: const Color(0xFF800020),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ] else if (currentStatus == TaskStatus.inProgress) ...[
                         Container(
                           width: double.infinity,
                           padding: const EdgeInsets.all(14),
@@ -1269,7 +1330,12 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
                               int progressedCount = 0;
                               setState(() {
                                 task.status = currentStatus;
-                                if (currentStatus == TaskStatus.inProgress) {
+                                if (currentStatus == TaskStatus.assigned) {
+                                  task.timeWindow = (task.status == TaskStatus.assigned && task.timeWindow.isNotEmpty)
+                                      ? task.timeWindow
+                                      : _formatTimeOfDay(startTime);
+                                  task.timeLogged = 'Assigned';
+                                } else if (currentStatus == TaskStatus.inProgress) {
                                   task.timeWindow = '${_formatTimeOfDay(startTime)} - ---';
                                   task.timeLogged = 'In progress';
                                 } else {
@@ -1287,11 +1353,13 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
                                   content: Text(
-                                    currentStatus == TaskStatus.inProgress
-                                        ? 'Status set to In Progress for "${task.workName}"'
-                                        : progressedCount > 0
-                                            ? 'Completed "${task.workName}" • $progressedCount previous pending task(s) updated to Progressed'
-                                            : 'Updated "${task.workName}" to ${currentStatus.label} • Logged: ${calculated.formattedLogged}',
+                                    currentStatus == TaskStatus.assigned
+                                        ? 'Task status kept as Assigned for ${task.designerName}'
+                                        : currentStatus == TaskStatus.inProgress
+                                            ? 'Work started: In Progress for "${task.workName}"'
+                                            : progressedCount > 0
+                                                ? 'Completed "${task.workName}" • $progressedCount previous pending task(s) updated to Progressed'
+                                                : 'Updated "${task.workName}" to ${currentStatus.label} • Logged: ${calculated.formattedLogged}',
                                   ),
                                   duration: const Duration(seconds: 2),
                                   behavior: SnackBarBehavior.floating,
@@ -1737,6 +1805,8 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
                                       const DropdownMenuItem(value: TaskStatus.completed, child: Text('Completed')),
                                       if (selectedStatus == TaskStatus.progressed)
                                         const DropdownMenuItem(value: TaskStatus.progressed, child: Text('Progressed')),
+                                      if (selectedDesignerName.trim().toLowerCase() != 'sabith amjadi' || selectedStatus == TaskStatus.assigned)
+                                        const DropdownMenuItem(value: TaskStatus.assigned, child: Text('Assigned')),
                                     ],
                                     onChanged: (val) {
                                       if (val != null) setDialogState(() => selectedStatus = val);
@@ -1750,19 +1820,19 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
                         const SizedBox(width: 14),
 
                         // LOGGED TIME SLOT
-                        // START TIME
+                        // START TIME / ASSIGNED TIME
                         Expanded(
                           flex: 1,
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'START TIME',
+                                selectedStatus == TaskStatus.assigned ? 'ASSIGNED TIME' : 'START TIME',
                                 style: GoogleFonts.jetBrainsMono(
                                   fontSize: 10,
                                   fontWeight: FontWeight.w700,
                                   letterSpacing: 0.9,
-                                  color: const Color(0xFF64748B),
+                                  color: selectedStatus == TaskStatus.assigned ? const Color(0xFF800020) : const Color(0xFF64748B),
                                 ),
                               ),
                               const SizedBox(height: 6),
@@ -1807,82 +1877,83 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
                         const SizedBox(width: 14),
 
                         // END TIME
-                        Expanded(
-                          flex: 1,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    'END TIME',
-                                    style: GoogleFonts.jetBrainsMono(
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w700,
-                                      letterSpacing: 0.9,
-                                      color: const Color(0xFF64748B),
-                                    ),
-                                  ),
-                                  if (selectedEndTime != null)
-                                    InkWell(
-                                      onTap: () => setDialogState(() => selectedEndTime = null),
-                                      child: Text(
-                                        'Clear (---)',
-                                        style: GoogleFonts.inter(fontSize: 10, color: const Color(0xFFDC2626), fontWeight: FontWeight.w600),
+                        if (selectedStatus != TaskStatus.assigned)
+                          Expanded(
+                            flex: 1,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      'END TIME',
+                                      style: GoogleFonts.jetBrainsMono(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w700,
+                                        letterSpacing: 0.9,
+                                        color: const Color(0xFF64748B),
                                       ),
                                     ),
-                                ],
-                              ),
-                              const SizedBox(height: 6),
-                              InkWell(
-                                borderRadius: BorderRadius.circular(6),
-                                onTap: () async {
-                                  final picked = await showStudioTimePicker(
-                                    context: context,
-                                    initialTime: selectedEndTime ?? TimeOfDay.now(),
-                                  );
-                                  if (picked != null) {
-                                    setDialogState(() => selectedEndTime = picked);
-                                  }
-                                },
-                                child: Container(
-                                  height: 42,
-                                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                                  decoration: BoxDecoration(
-                                    color: selectedEndTime != null ? const Color(0xFFEEF2FF) : const Color(0xFFF8FAFC),
-                                    borderRadius: BorderRadius.circular(6),
-                                    border: Border.all(color: selectedEndTime != null ? const Color(0xFF818CF8) : const Color(0xFFE2E8F0)),
-                                  ),
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Text(
-                                        selectedEndTime != null ? _formatTimeOfDay(selectedEndTime!) : '---',
-                                        style: GoogleFonts.jetBrainsMono(
-                                          fontSize: 12,
-                                          fontWeight: selectedEndTime != null ? FontWeight.w700 : FontWeight.w500,
-                                          color: selectedEndTime != null ? const Color(0xFF312E81) : const Color(0xFF94A3B8),
+                                    if (selectedEndTime != null)
+                                      InkWell(
+                                        onTap: () => setDialogState(() => selectedEndTime = null),
+                                        child: Text(
+                                          'Clear (---)',
+                                          style: GoogleFonts.inter(fontSize: 10, color: const Color(0xFFDC2626), fontWeight: FontWeight.w600),
                                         ),
                                       ),
-                                      Icon(
-                                        Icons.schedule_rounded,
-                                        size: 16,
-                                        color: selectedEndTime != null ? const Color(0xFF4F46E5) : const Color(0xFF94A3B8),
-                                      ),
-                                    ],
+                                  ],
+                                ),
+                                const SizedBox(height: 6),
+                                InkWell(
+                                  borderRadius: BorderRadius.circular(6),
+                                  onTap: () async {
+                                    final picked = await showStudioTimePicker(
+                                      context: context,
+                                      initialTime: selectedEndTime ?? TimeOfDay.now(),
+                                    );
+                                    if (picked != null) {
+                                      setDialogState(() => selectedEndTime = picked);
+                                    }
+                                  },
+                                  child: Container(
+                                    height: 42,
+                                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                                    decoration: BoxDecoration(
+                                      color: selectedEndTime != null ? const Color(0xFFEEF2FF) : const Color(0xFFF8FAFC),
+                                      borderRadius: BorderRadius.circular(6),
+                                      border: Border.all(color: selectedEndTime != null ? const Color(0xFF818CF8) : const Color(0xFFE2E8F0)),
+                                    ),
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text(
+                                          selectedEndTime != null ? _formatTimeOfDay(selectedEndTime!) : '---',
+                                          style: GoogleFonts.jetBrainsMono(
+                                            fontSize: 12,
+                                            fontWeight: selectedEndTime != null ? FontWeight.w700 : FontWeight.w500,
+                                            color: selectedEndTime != null ? const Color(0xFF312E81) : const Color(0xFF94A3B8),
+                                          ),
+                                        ),
+                                        Icon(
+                                          Icons.schedule_rounded,
+                                          size: 16,
+                                          color: selectedEndTime != null ? const Color(0xFF4F46E5) : const Color(0xFF94A3B8),
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
-                        ),
                       ],
                     ),
                     const SizedBox(height: 12),
 
                     // Automatic calculation summary in Edit Dialog
-                    if (selectedEndTime != null)
+                    if (selectedEndTime != null && selectedStatus != TaskStatus.assigned)
                       Container(
                         width: double.infinity,
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -1947,7 +2018,10 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
 
                             String finalWindow;
                             String finalLogged;
-                            if (selectedEndTime != null && selectedStatus != TaskStatus.inProgress) {
+                            if (selectedStatus == TaskStatus.assigned) {
+                              finalWindow = _formatTimeOfDay(selectedStartTime);
+                              finalLogged = 'Assigned';
+                            } else if (selectedEndTime != null && selectedStatus != TaskStatus.inProgress) {
                               final calc = _calculateTimeLogged(selectedStartTime, selectedEndTime!);
                               finalWindow = '${_formatTimeOfDay(selectedStartTime)} - ${_formatTimeOfDay(selectedEndTime!)}';
                               finalLogged = calc.formattedLogged;
@@ -2015,12 +2089,16 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
 
   Widget _buildDesignerAvatar(String avatarUrl, String designerName, {double size = 32}) {
     final initial = designerName.isNotEmpty ? designerName[0].toUpperCase() : 'D';
-    final isAsset = avatarUrl.startsWith('assets/');
+    String resolvedUrl = avatarUrl;
+    if (resolvedUrl.startsWith('assets/')) {
+      resolvedUrl = resolvedUrl.replaceAll(RegExp(r'\.(jpg|jpeg|png)$'), '.webp');
+    }
+    final isAsset = resolvedUrl.startsWith('assets/');
 
     Widget imageWidget;
     if (isAsset) {
       imageWidget = Image.asset(
-        avatarUrl,
+        resolvedUrl,
         width: size,
         height: size,
         fit: BoxFit.cover,
@@ -3612,6 +3690,9 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
                                             if (val.trim().toLowerCase() != 'sabith amjadi' && selectedType == 'Tutoring') {
                                               selectedType = 'Logo';
                                             }
+                                            if (val.trim().toLowerCase() == 'sabith amjadi' && selectedStatus == TaskStatus.assigned) {
+                                              selectedStatus = TaskStatus.inProgress;
+                                            }
                                           });
                                         }
                                       },
@@ -3796,52 +3877,128 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
                                   height: 42,
                                   padding: const EdgeInsets.symmetric(horizontal: 14),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFFEFF6FF),
+                                    color: selectedStatus == TaskStatus.assigned
+                                        ? const Color(0xFFFDF2F4)
+                                        : const Color(0xFFEFF6FF),
                                     borderRadius: BorderRadius.circular(6),
-                                    border: Border.all(color: const Color(0xFFBFDBFE)),
+                                    border: Border.all(
+                                      color: selectedStatus == TaskStatus.assigned
+                                          ? const Color(0xFFF3C6D0)
+                                          : const Color(0xFFBFDBFE),
+                                    ),
                                   ),
-                                  child: Row(
-                                    children: [
-                                      Container(
-                                        width: 8,
-                                        height: 8,
-                                        decoration: const BoxDecoration(
-                                          color: Color(0xFF3B82F6),
-                                          shape: BoxShape.circle,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Expanded(
-                                        child: Text(
-                                          'In Progress',
-                                          style: GoogleFonts.inter(
-                                            fontSize: 13,
-                                            fontWeight: FontWeight.w600,
-                                            color: const Color(0xFF1E40AF),
+                                  child: selectedDesignerName.trim().toLowerCase() == 'sabith amjadi'
+                                      ? Row(
+                                          children: [
+                                            Container(
+                                              width: 8,
+                                              height: 8,
+                                              decoration: const BoxDecoration(
+                                                color: Color(0xFF3B82F6),
+                                                shape: BoxShape.circle,
+                                              ),
+                                            ),
+                                            const SizedBox(width: 8),
+                                            Expanded(
+                                              child: Text(
+                                                'In Progress',
+                                                style: GoogleFonts.inter(
+                                                  fontSize: 13,
+                                                  fontWeight: FontWeight.w600,
+                                                  color: const Color(0xFF1E40AF),
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        )
+                                      : DropdownButtonHideUnderline(
+                                          child: DropdownButton<TaskStatus>(
+                                            value: selectedStatus,
+                                            isExpanded: true,
+                                            icon: const Icon(Icons.unfold_more_rounded, size: 18, color: Color(0xFF475569)),
+                                            style: GoogleFonts.inter(
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w600,
+                                              color: selectedStatus == TaskStatus.assigned
+                                                  ? const Color(0xFF800020)
+                                                  : const Color(0xFF1E40AF),
+                                            ),
+                                            items: [
+                                              DropdownMenuItem(
+                                                value: TaskStatus.inProgress,
+                                                child: Row(
+                                                  children: [
+                                                    Container(
+                                                      width: 8,
+                                                      height: 8,
+                                                      decoration: const BoxDecoration(
+                                                        color: Color(0xFF3B82F6),
+                                                        shape: BoxShape.circle,
+                                                      ),
+                                                    ),
+                                                    const SizedBox(width: 8),
+                                                    Text(
+                                                      'In Progress',
+                                                      style: GoogleFonts.inter(
+                                                        fontSize: 13,
+                                                        fontWeight: FontWeight.w600,
+                                                        color: const Color(0xFF1E40AF),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                              DropdownMenuItem(
+                                                value: TaskStatus.assigned,
+                                                child: Row(
+                                                  children: [
+                                                    Container(
+                                                      width: 8,
+                                                      height: 8,
+                                                      decoration: const BoxDecoration(
+                                                        color: Color(0xFF800020),
+                                                        shape: BoxShape.circle,
+                                                      ),
+                                                    ),
+                                                    const SizedBox(width: 8),
+                                                    Text(
+                                                      'Assigned',
+                                                      style: GoogleFonts.inter(
+                                                        fontSize: 13,
+                                                        fontWeight: FontWeight.w600,
+                                                        color: const Color(0xFF800020),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ],
+                                            onChanged: (val) {
+                                              if (val != null) {
+                                                setDialogState(() => selectedStatus = val);
+                                              }
+                                            },
                                           ),
                                         ),
-                                      ),
-                                    ],
-                                  ),
                                 ),
                               ],
                             ),
                           ),
                           const SizedBox(width: 14),
 
-                          // START TIME (Fetched accordingly)
+                          // START TIME / ASSIGNED TIME (Fetched accordingly)
                           Expanded(
                             flex: 2,
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'START TIME',
+                                  selectedStatus == TaskStatus.assigned ? 'ASSIGNED TIME' : 'START TIME',
                                   style: GoogleFonts.jetBrainsMono(
                                     fontSize: 10,
                                     fontWeight: FontWeight.w700,
                                     letterSpacing: 0.9,
-                                    color: const Color(0xFF64748B),
+                                    color: selectedStatus == TaskStatus.assigned ? const Color(0xFF800020) : const Color(0xFF64748B),
                                   ),
                                 ),
                                 const SizedBox(height: 6),
@@ -3862,7 +4019,11 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
                                     decoration: BoxDecoration(
                                       color: const Color(0xFFF1F4FA),
                                       borderRadius: BorderRadius.circular(6),
-                                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                                      border: Border.all(
+                                        color: selectedStatus == TaskStatus.assigned
+                                            ? const Color(0xFFF3C6D0)
+                                            : const Color(0xFFE2E8F0),
+                                      ),
                                     ),
                                     child: Row(
                                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -3875,7 +4036,15 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
                                             color: const Color(0xFF0F172A),
                                           ),
                                         ),
-                                        const Icon(Icons.schedule_rounded, size: 16, color: Color(0xFF4F46E5)),
+                                        Icon(
+                                          selectedStatus == TaskStatus.assigned
+                                              ? Icons.assignment_ind_rounded
+                                              : Icons.schedule_rounded,
+                                          size: 16,
+                                          color: selectedStatus == TaskStatus.assigned
+                                              ? const Color(0xFF800020)
+                                              : const Color(0xFF4F46E5),
+                                        ),
                                       ],
                                     ),
                                   ),
@@ -3923,7 +4092,7 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
                                       const SizedBox(width: 6),
                                       Flexible(
                                         child: Text(
-                                          '(In Progress)',
+                                          selectedStatus == TaskStatus.assigned ? '(Assigned Task)' : '(In Progress)',
                                           style: GoogleFonts.inter(
                                             fontSize: 10,
                                             fontWeight: FontWeight.w500,
@@ -3978,7 +4147,10 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
                               final startTimeStr = _formatTimeOfDay(selectedStartTime);
                               String finalWindow;
                               String finalLogged;
-                              if (selectedStatus == TaskStatus.inProgress) {
+                              if (selectedStatus == TaskStatus.assigned) {
+                                finalWindow = startTimeStr;
+                                finalLogged = 'Assigned';
+                              } else if (selectedStatus == TaskStatus.inProgress) {
                                 finalWindow = '$startTimeStr - ---';
                                 finalLogged = 'In progress';
                               } else if (selectedStatus == TaskStatus.pending) {
@@ -4021,9 +4193,11 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
                                   content: Text(
-                                    progressedCount > 0
-                                        ? 'Created "${workNameCtrl.text.trim()}" • $progressedCount previous pending task(s) updated to Progressed'
-                                        : 'Created entry "${workNameCtrl.text.trim()}" for $selectedDateStr',
+                                    selectedStatus == TaskStatus.assigned
+                                        ? 'Task "${workNameCtrl.text.trim()}" assigned to $selectedDesignerName at $startTimeStr'
+                                        : progressedCount > 0
+                                            ? 'Created "${workNameCtrl.text.trim()}" • $progressedCount previous pending task(s) updated to Progressed'
+                                            : 'Created entry "${workNameCtrl.text.trim()}" for $selectedDateStr',
                                   ),
                                   duration: const Duration(seconds: 2),
                                   behavior: SnackBarBehavior.floating,
@@ -4136,7 +4310,7 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
                     clipBehavior: Clip.antiAlias,
                     child: Center(
                       child: Image.asset(
-                        'assets/logo/exouzia_logo.png',
+                        'assets/logo/exouzia_logo.webp',
                         width: 80,
                         height: 18,
                         fit: BoxFit.contain,
@@ -4403,7 +4577,7 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
   // --- METRICS ROW (4 CARDS) ---
   Widget _buildMetricsRow({required bool isNarrow, bool isMobile = false}) {
     final dayTasks = _tasks.where((t) => _isTaskInActiveTimeframe(t)).toList();
-    final activeCount = dayTasks.where((t) => t.status == TaskStatus.inProgress || t.status == TaskStatus.pending).length;
+    final activeCount = dayTasks.where((t) => t.status == TaskStatus.inProgress || t.status == TaskStatus.pending || t.status == TaskStatus.assigned).length;
     final completedCount = dayTasks.where((t) => t.status == TaskStatus.completed).length;
     final activeStaffCount = dayTasks.map((t) => t.designerName).toSet().length;
 
@@ -4709,6 +4883,15 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
                 });
               }),
               const SizedBox(width: 6),
+              _buildFilterChip('Assigned', isSelected: _selectedStatus == 'Assigned', onSelected: () {
+                setState(() {
+                  _selectedStatus = 'Assigned';
+                  if (_selectedDateFilter == 'Today' || _selectedDateFilter == 'Yesterday' || _selectedDateFilter == 'Custom') {
+                    _selectedDateFilter = 'Last 14 Days';
+                  }
+                });
+              }),
+              const SizedBox(width: 6),
               _buildFilterChip('Completed', isSelected: _selectedStatus == 'Completed', onSelected: () {
                 setState(() => _selectedStatus = 'Completed');
               }),
@@ -4861,7 +5044,8 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
   Widget _buildDataTableCard() {
     final tasks = _filteredTasks;
     final isGlobalStatusFilter = _selectedStatus == 'In Progress' ||
-        _selectedStatus == 'Pending';
+        _selectedStatus == 'Pending' ||
+        _selectedStatus == 'Assigned';
 
     return Container(
       decoration: BoxDecoration(
@@ -5291,22 +5475,42 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Text(
-                  task.timeWindow,
-                  style: GoogleFonts.jetBrainsMono(
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w600,
-                    color: const Color(0xFF1E293B),
+                if (task.status == TaskStatus.assigned) ...[
+                  Text(
+                    task.timeWindow,
+                    style: GoogleFonts.jetBrainsMono(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFF800020),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  task.timeLogged,
-                  style: GoogleFonts.jetBrainsMono(
-                    fontSize: 11.5,
-                    color: const Color(0xFF64748B),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Assigned time',
+                    style: GoogleFonts.jetBrainsMono(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: const Color(0xFF800020),
+                    ),
                   ),
-                ),
+                ] else ...[
+                  Text(
+                    task.timeWindow,
+                    style: GoogleFonts.jetBrainsMono(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w600,
+                      color: const Color(0xFF1E293B),
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    task.timeLogged,
+                    style: GoogleFonts.jetBrainsMono(
+                      fontSize: 11.5,
+                      color: const Color(0xFF64748B),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
