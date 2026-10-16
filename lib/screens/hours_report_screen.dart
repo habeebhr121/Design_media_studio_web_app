@@ -358,7 +358,7 @@ class _HoursReportScreenState extends State<HoursReportScreen> {
 
     final StringBuffer csv = StringBuffer();
     // CSV Header row
-    csv.writeln('Date,Designer,Client,Work Deliverable,Type,Time Window,Logged Hours,Status,Priority,Work Brief');
+    csv.writeln('Date,Designer,Work Deliverable,Type,Time Window,Logged Hours,Status,Priority,Work Brief');
 
     double totalHours = 0.0;
     for (final task in logs) {
@@ -369,7 +369,7 @@ class _HoursReportScreenState extends State<HoursReportScreen> {
       final row = [
         _csvEscape(task.date),
         _csvEscape(task.designerName),
-        _csvEscape(task.clientName),
+        // _csvEscape(task.clientName),  removed client name from export 
         _csvEscape(task.workName),
         _csvEscape(task.typeTag),
         _csvEscape(task.timeWindow),

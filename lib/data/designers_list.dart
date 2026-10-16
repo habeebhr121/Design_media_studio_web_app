@@ -4,7 +4,7 @@ final List<Designer> designers = [
   Designer(
     name: 'Jawad',
     imagePath: 'assets/img/javad_img.jpg',
-    designation: 'UI/UX Designer',
+    designation: 'Graphic Designer',
     description: 'Specialized in modern mobile app interfaces.',
   ),
 

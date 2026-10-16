@@ -10,6 +10,7 @@ import 'package:studio_track/data/designers_list.dart';
 import 'package:studio_track/data/dummy_data.dart';
 import 'package:studio_track/services/firebase_task_service.dart';
 import 'package:studio_track/utils/web_image_resizer.dart';
+import 'package:studio_track/widgets/studio_time_picker.dart';
 
 // --- DATA MODELS ---
 
@@ -1107,7 +1108,7 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
                                         InkWell(
                                           borderRadius: BorderRadius.circular(6),
                                           onTap: () async {
-                                            final picked = await showTimePicker(
+                                            final picked = await showStudioTimePicker(
                                               context: context,
                                               initialTime: startTime,
                                             );
@@ -1153,7 +1154,7 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
                                         InkWell(
                                           borderRadius: BorderRadius.circular(6),
                                           onTap: () async {
-                                            final picked = await showTimePicker(
+                                            final picked = await showStudioTimePicker(
                                               context: context,
                                               initialTime: endTime,
                                             );
@@ -1768,7 +1769,7 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
                               InkWell(
                                 borderRadius: BorderRadius.circular(6),
                                 onTap: () async {
-                                  final picked = await showTimePicker(
+                                  final picked = await showStudioTimePicker(
                                     context: context,
                                     initialTime: selectedStartTime,
                                   );
@@ -1837,7 +1838,7 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
                               InkWell(
                                 borderRadius: BorderRadius.circular(6),
                                 onTap: () async {
-                                  final picked = await showTimePicker(
+                                  final picked = await showStudioTimePicker(
                                     context: context,
                                     initialTime: selectedEndTime ?? TimeOfDay.now(),
                                   );
@@ -3847,7 +3848,7 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
                                 InkWell(
                                   borderRadius: BorderRadius.circular(6),
                                   onTap: () async {
-                                    final picked = await showTimePicker(
+                                    final picked = await showStudioTimePicker(
                                       context: context,
                                       initialTime: selectedStartTime,
                                     );
