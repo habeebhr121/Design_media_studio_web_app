@@ -15,7 +15,7 @@ import 'package:studio_track/widgets/studio_time_picker.dart';
 // --- DATA MODELS ---
 
 enum TaskStatus {
-  inProgress('In Progress', Color(0xFF3B82F6), Color(0xFFEFF6FF), Color(0xFF2563EB)),
+  inProgress('Started', Color(0xFF3B82F6), Color(0xFFEFF6FF), Color(0xFF2563EB)),
   completed('Completed', Color(0xFF10B981), Color(0xFFECFDF5), Color(0xFF047857)),
   pending('Pending', Color(0xFFEF4444), Color(0xFFFEF2F2), Color(0xFFB91C1C)),
   progressed('Progressed', Color(0xFFF59E0B), Color(0xFFFFFBEB), Color(0xFFB45309)),
@@ -345,7 +345,8 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
   }
 
   bool _isTaskInActiveTimeframe(StudioTask task) {
-    final isGlobalStatusFilter = _selectedStatus == 'In Progress' ||
+    final isGlobalStatusFilter = _selectedStatus == 'Started' ||
+        _selectedStatus == 'In Progress' ||
         _selectedStatus == 'Pending' ||
         _selectedStatus == 'Assigned';
 
@@ -356,7 +357,7 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
     final diff = todayMidnight.difference(taskMidnight).inDays;
 
     if (isGlobalStatusFilter) {
-      // When In Progress or Pending is active:
+      // When Started or Pending is active:
       // If user selected Last 7 Days, check within 7 days.
       // Otherwise default to the 14 days active timeframe window.
       if (_selectedDateFilter == 'Last 7 Days') {
@@ -426,9 +427,27 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
   }
 
   List<DesignerCapacity> get _capacities {
+    final now = DateTime.now();
+    final todayMidnight = DateTime(now.year, now.month, now.day);
+    final targetDate = (_selectedDateFilter == 'Yesterday')
+        ? todayMidnight.subtract(const Duration(days: 1))
+        : (_selectedDateFilter == 'Custom')
+            ? DateTime(_selectedCustomDate.year, _selectedCustomDate.month, _selectedCustomDate.day)
+            : todayMidnight;
+    final targetDateStr = (_selectedDateFilter == 'Yesterday')
+        ? _yesterdayDateStr
+        : (_selectedDateFilter == 'Custom')
+            ? _formatDate(_selectedCustomDate)
+            : _todayDateStr;
+
     return designers.map((designer) {
       double loggedHours = 0.0;
       for (final t in _tasks) {
+        final tDate = _parseTaskDate(t.date);
+        final tMidnight = DateTime(tDate.year, tDate.month, tDate.day);
+        final isMatchDate = tMidnight == targetDate || t.date == targetDateStr;
+        if (!isMatchDate) continue;
+
         final matches = t.designerName.trim().toLowerCase() == designer.name.trim().toLowerCase() ||
             t.designerName.toLowerCase().contains(designer.name.toLowerCase()) ||
             designer.name.toLowerCase().contains(t.designerName.toLowerCase());
@@ -440,7 +459,7 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
       return DesignerCapacity(
         name: designer.name,
         currentHours: loggedHours,
-        maxHours: 40.0,
+        maxHours: 7.5,
       );
     }).toList();
   }
@@ -1079,7 +1098,7 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
                                     ),
                                     const SizedBox(height: 2),
                                     Text(
-                                      'Assigned at ${task.timeWindow} • Select "In Progress" above when work begins.',
+                                      'Assigned at ${task.timeWindow} • Select "Started" above when work begins.',
                                       style: GoogleFonts.jetBrainsMono(
                                         fontSize: 10.5,
                                         color: const Color(0xFF800020),
@@ -1109,7 +1128,7 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      'Active In Progress Session',
+                                      'Active Started Session',
                                       style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: const Color(0xFF1E40AF)),
                                     ),
                                     const SizedBox(height: 2),
@@ -1337,7 +1356,7 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
                                   task.timeLogged = 'Assigned';
                                 } else if (currentStatus == TaskStatus.inProgress) {
                                   task.timeWindow = '${_formatTimeOfDay(startTime)} - ---';
-                                  task.timeLogged = 'In progress';
+                                  task.timeLogged = 'Started';
                                 } else {
                                   task.timeWindow = '${_formatTimeOfDay(startTime)} - ${_formatTimeOfDay(endTime)}';
                                   task.timeLogged = calculated.formattedLogged;
@@ -1356,7 +1375,7 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
                                     currentStatus == TaskStatus.assigned
                                         ? 'Task status kept as Assigned for ${task.designerName}'
                                         : currentStatus == TaskStatus.inProgress
-                                            ? 'Work started: In Progress for "${task.workName}"'
+                                            ? 'Work started for "${task.workName}"'
                                             : progressedCount > 0
                                                 ? 'Completed "${task.workName}" • $progressedCount previous pending task(s) updated to Progressed'
                                                 : 'Updated "${task.workName}" to ${currentStatus.label} • Logged: ${calculated.formattedLogged}',
@@ -1800,7 +1819,7 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
                                       color: const Color(0xFF0F172A),
                                     ),
                                     items: [
-                                      const DropdownMenuItem(value: TaskStatus.inProgress, child: Text('In Progress')),
+                                      const DropdownMenuItem(value: TaskStatus.inProgress, child: Text('Started')),
                                       const DropdownMenuItem(value: TaskStatus.pending, child: Text('Pending')),
                                       const DropdownMenuItem(value: TaskStatus.completed, child: Text('Completed')),
                                       if (selectedStatus == TaskStatus.progressed)
@@ -2027,7 +2046,7 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
                               finalLogged = calc.formattedLogged;
                             } else if (selectedStatus == TaskStatus.inProgress) {
                               finalWindow = '${_formatTimeOfDay(selectedStartTime)} - ---';
-                              finalLogged = 'In progress';
+                              finalLogged = 'Started';
                             } else {
                               finalWindow = '${_formatTimeOfDay(selectedStartTime)} - ---';
                               finalLogged = '---';
@@ -3901,7 +3920,7 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
                                             const SizedBox(width: 8),
                                             Expanded(
                                               child: Text(
-                                                'In Progress',
+                                                'Started',
                                                 style: GoogleFonts.inter(
                                                   fontSize: 13,
                                                   fontWeight: FontWeight.w600,
@@ -3938,7 +3957,7 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
                                                     ),
                                                     const SizedBox(width: 8),
                                                     Text(
-                                                      'In Progress',
+                                                      'Started',
                                                       style: GoogleFonts.inter(
                                                         fontSize: 13,
                                                         fontWeight: FontWeight.w600,
@@ -4092,7 +4111,7 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
                                       const SizedBox(width: 6),
                                       Flexible(
                                         child: Text(
-                                          selectedStatus == TaskStatus.assigned ? '(Assigned Task)' : '(In Progress)',
+                                          selectedStatus == TaskStatus.assigned ? '(Assigned Task)' : '(Started)',
                                           style: GoogleFonts.inter(
                                             fontSize: 10,
                                             fontWeight: FontWeight.w500,
@@ -4152,7 +4171,7 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
                                 finalLogged = 'Assigned';
                               } else if (selectedStatus == TaskStatus.inProgress) {
                                 finalWindow = '$startTimeStr - ---';
-                                finalLogged = 'In progress';
+                                finalLogged = 'Started';
                               } else if (selectedStatus == TaskStatus.pending) {
                                 finalWindow = '$startTimeStr - ---';
                                 finalLogged = '---';
@@ -4612,7 +4631,7 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
       iconColor: const Color(0xFF2563EB),
       label: 'ACTIVE TASKS',
       boldValue: '$activeCount',
-      subText: 'in progress',
+      subText: 'started',
     );
     final c2 = _buildMetricCard(
       icon: Icons.access_time_rounded,
@@ -4865,11 +4884,11 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
                 setState(() => _selectedStatus = 'All');
               }),
               const SizedBox(width: 6),
-              _buildFilterChip('In Progress', isSelected: _selectedStatus == 'In Progress', onSelected: () {
+              _buildFilterChip('Started', isSelected: _selectedStatus == 'Started', onSelected: () {
                 setState(() {
-                  _selectedStatus = 'In Progress';
+                  _selectedStatus = 'Started';
                   if (_selectedDateFilter == 'Today' || _selectedDateFilter == 'Yesterday' || _selectedDateFilter == 'Custom') {
-                    _selectedDateFilter = 'Last 14 Days';
+                    _selectedDateFilter = 'Last 7 Days';
                   }
                 });
               }),
@@ -4878,7 +4897,7 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
                 setState(() {
                   _selectedStatus = 'Pending';
                   if (_selectedDateFilter == 'Today' || _selectedDateFilter == 'Yesterday' || _selectedDateFilter == 'Custom') {
-                    _selectedDateFilter = 'Last 14 Days';
+                    _selectedDateFilter = 'Last 7 Days';
                   }
                 });
               }),
@@ -4887,7 +4906,7 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
                 setState(() {
                   _selectedStatus = 'Assigned';
                   if (_selectedDateFilter == 'Today' || _selectedDateFilter == 'Yesterday' || _selectedDateFilter == 'Custom') {
-                    _selectedDateFilter = 'Last 14 Days';
+                    _selectedDateFilter = 'Last 7 Days';
                   }
                 });
               }),
@@ -5043,7 +5062,8 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
   // --- DATA TABLE CARD ---
   Widget _buildDataTableCard() {
     final tasks = _filteredTasks;
-    final isGlobalStatusFilter = _selectedStatus == 'In Progress' ||
+    final isGlobalStatusFilter = _selectedStatus == 'Started' ||
+        _selectedStatus == 'In Progress' ||
         _selectedStatus == 'Pending' ||
         _selectedStatus == 'Assigned';
 
@@ -5652,6 +5672,26 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
     final totalMax = capacities.fold<double>(0.0, (sum, c) => sum + c.maxHours);
     final targetPercentage = totalMax > 0 ? ((totalLogged / totalMax) * 100).round() : 0;
 
+    final String eyebrowText;
+    if (_selectedDateFilter == 'Yesterday') {
+      eyebrowText = "YESTERDAY'S ALLOCATION";
+    } else if (_selectedDateFilter == 'Custom') {
+      eyebrowText = "DAILY ALLOCATION";
+    } else {
+      eyebrowText = "TODAY'S ALLOCATION";
+    }
+
+    String formatHours(double h) {
+      if (h.truncateToDouble() == h) {
+        return '${h.toInt()}h';
+      }
+      return '${h.toStringAsFixed(1)}h';
+    }
+
+    final targetHoursStr = totalMax.truncateToDouble() == totalMax
+        ? '${totalMax.toInt()}'
+        : totalMax.toStringAsFixed(1);
+
     return Container(
       padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
@@ -5666,7 +5706,7 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'WEEKLY ALLOCATION',
+                eyebrowText,
                 style: GoogleFonts.jetBrainsMono(
                   fontSize: 10,
                   fontWeight: FontWeight.w600,
@@ -5695,7 +5735,7 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
           ),
           const SizedBox(height: 4),
           Text(
-            'Studio target is ${totalMax.toInt()} weekly hours across the ${designers.length} core creative leads.',
+            'Studio target is $targetHoursStr daily hours (7.5h/designer) across the ${designers.length} core creative leads.',
             style: GoogleFonts.inter(
               fontSize: 11.5,
               color: const Color(0xFF64748B),
@@ -5720,7 +5760,7 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
                         ),
                       ),
                       Text(
-                        '${item.currentHours.toInt()}h / ${item.maxHours.toInt()}h',
+                        '${formatHours(item.currentHours)} / ${formatHours(item.maxHours)}',
                         style: GoogleFonts.jetBrainsMono(
                           fontSize: 10.5,
                           color: const Color(0xFF8E9BAE),

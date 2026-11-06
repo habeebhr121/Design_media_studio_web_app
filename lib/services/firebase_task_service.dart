@@ -134,7 +134,11 @@ class FirebaseTaskService {
     final statusStr = data['status'] as String? ?? 'inProgress';
     TaskStatus status = TaskStatus.inProgress;
     for (final s in TaskStatus.values) {
-      if (s.name == statusStr || s.label.toLowerCase() == statusStr.toLowerCase()) {
+      if (s.name == statusStr ||
+          s.label.toLowerCase() == statusStr.toLowerCase() ||
+          (s == TaskStatus.inProgress &&
+              (statusStr.toLowerCase() == 'in progress' ||
+                  statusStr.toLowerCase() == 'inprogress'))) {
         status = s;
         break;
       }

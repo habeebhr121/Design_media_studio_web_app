@@ -890,7 +890,7 @@ class _HoursReportScreenState extends State<HoursReportScreen> {
           ),
           const SizedBox(width: 6),
           Text(
-            '$activeReviewCount queued / in progress',
+            '$activeReviewCount queued / started',
             style: GoogleFonts.jetBrainsMono(
               fontSize: 10.5,
               color: const Color(0xFF64748B),
