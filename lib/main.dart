@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'firebase_options.dart';
 import 'screens/studio_workboard_screen.dart';
 import 'screens/hours_report_screen.dart';
+import 'screens/leave_report_screen.dart';
 import 'screens/login_screen.dart';
 
 void main() async {
@@ -26,7 +27,7 @@ class StudioTrackApp extends StatefulWidget {
 }
 
 class _StudioTrackAppState extends State<StudioTrackApp> {
-  int _currentTabIndex = 0; // 0: Workboard, 1: Hours Report, 2: Login
+  int _currentTabIndex = 0; // 0: Workboard, 1: Hours Report, 2: Leave Report, 3: Login
 
   @override
   Widget build(BuildContext context) {
@@ -56,8 +57,11 @@ class _StudioTrackAppState extends State<StudioTrackApp> {
           onNavigateToHoursReport: () {
             setState(() => _currentTabIndex = 1);
           },
-          onNavigateToLogin: () {
+          onNavigateToLeaveReport: () {
             setState(() => _currentTabIndex = 2);
+          },
+          onNavigateToLogin: () {
+            setState(() => _currentTabIndex = 3);
           },
         );
       case 1:
@@ -65,11 +69,26 @@ class _StudioTrackAppState extends State<StudioTrackApp> {
           onNavigateToWorkboard: () {
             setState(() => _currentTabIndex = 0);
           },
-          onNavigateToLogin: () {
+          onNavigateToLeaveReport: () {
             setState(() => _currentTabIndex = 2);
+          },
+          onNavigateToLogin: () {
+            setState(() => _currentTabIndex = 3);
           },
         );
       case 2:
+        return LeaveReportScreen(
+          onNavigateToWorkboard: () {
+            setState(() => _currentTabIndex = 0);
+          },
+          onNavigateToHoursReport: () {
+            setState(() => _currentTabIndex = 1);
+          },
+          onNavigateToLogin: () {
+            setState(() => _currentTabIndex = 3);
+          },
+        );
+      case 3:
       default:
         return LoginScreen(
           onLoginSuccess: () {

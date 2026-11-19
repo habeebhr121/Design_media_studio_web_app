@@ -115,11 +115,13 @@ class DailyCadence {
 
 class StudioWorkboardScreen extends StatefulWidget {
   final VoidCallback? onNavigateToHoursReport;
+  final VoidCallback? onNavigateToLeaveReport;
   final VoidCallback? onNavigateToLogin;
 
   const StudioWorkboardScreen({
     super.key,
     this.onNavigateToHoursReport,
+    this.onNavigateToLeaveReport,
     this.onNavigateToLogin,
   });
 
@@ -4359,6 +4361,10 @@ class _StudioWorkboardScreenState extends State<StudioWorkboardScreen> {
               _buildNavTab('Hours Report', isActive: false, onTap: () {
                 widget.onNavigateToHoursReport?.call();
               }),
+              const SizedBox(width: 6),
+              // _buildNavTab('Leave Report', isActive: false, onTap: () {
+              //   widget.onNavigateToLeaveReport?.call();
+              // }),
               const Spacer(),
               if (!isVeryCompact) ...[
                 Container(

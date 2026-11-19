@@ -52,11 +52,13 @@ class WorkTypeDistribution {
 
 class HoursReportScreen extends StatefulWidget {
   final VoidCallback onNavigateToWorkboard;
+  final VoidCallback? onNavigateToLeaveReport;
   final VoidCallback? onNavigateToLogin;
 
   const HoursReportScreen({
     super.key,
     required this.onNavigateToWorkboard,
+    this.onNavigateToLeaveReport,
     this.onNavigateToLogin,
   });
 
@@ -534,6 +536,10 @@ class _HoursReportScreenState extends State<HoursReportScreen> {
               _buildNavTab('Workboard', isActive: false, onTap: widget.onNavigateToWorkboard),
               const SizedBox(width: 6),
               _buildNavTab('Hours Report', isActive: true, onTap: () {}),
+              const SizedBox(width: 6),
+              // _buildNavTab('Leave Report', isActive: false, onTap: () {
+              //   widget.onNavigateToLeaveReport?.call();
+              // }),
               const Spacer(),
               if (!isVeryCompact) ...[
                 Container(

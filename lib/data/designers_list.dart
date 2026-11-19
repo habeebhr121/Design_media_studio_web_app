@@ -16,7 +16,7 @@ final List<Designer> designers = [
   ),
 
   Designer(
-    name: 'Muhd. Nizam',
+    name: 'Nizam',
     imagePath: 'assets/img/nizam_img.webp',
     designation: 'Graphic Designer',
     description: 'Creates branding and visual design systems.',
@@ -26,6 +26,20 @@ final List<Designer> designers = [
     name: 'Sam',
     imagePath: 'assets/img/sam_img.webp',
     designation: 'Graphic Designer',
+    description: 'Creates branding and visual design systems.',
+  ),
+
+  Designer(
+    name: 'Sinan',
+    imagePath: 'assets/img/sinan_img.webp',
+    designation: 'Junior Designer',
+    description: 'Creates branding and visual design systems.',
+  ),
+
+  Designer(
+    name: 'Shuhaib',
+    imagePath: 'assets/img/shuhaib_img.webp',
+    designation: 'Junior Designer',
     description: 'Creates branding and visual design systems.',
   ),
 ];
